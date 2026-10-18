@@ -384,7 +384,8 @@ function renderHome() {
   const plan = todayPlan();
   const quiet = store.settings.quiet;
   const showHint = !isStandalone() && !store.settings.hideIosHint;
-  const required = plan.blocks.filter((b) => !b.optional);   // an optional block (weekend Rival Battle) never counts
+  const required = plan.blocks.filter((b) => !b.optional);
+  const bonus = plan.blocks.find((b) => b.optional);   // shown as a bonus slot in its own colour   // an optional block (weekend Rival Battle) never counts
   const doneCount = required.filter((b) => b.status === 'done').length;
   const next = plan.blocks.find((b) => !b.status && !b.optional) || plan.blocks.find((b) => b.status === 'skipped' && !b.optional);
   const now = new Date();
@@ -394,7 +395,7 @@ function renderHome() {
     const href = `#/today/${b.id}`;
     return `<div class="block-row ${st || ''} ${b === next && !st ? 'next' : ''}">
       <span class="block-check" aria-label="${st === 'done' ? 'done' : st === 'skipped' ? 'skipped' : 'to do'}">${st === 'done' ? '✓' : st === 'skipped' ? '–' : b.n}</span>
-      <span class="grow"><span class="strong">${esc(b.title)}</span> <span class="small dim">~${b.mins} min</span>${b.optional ? ' <span class="tag">optional</span>' : ''}<br><span class="small dim">${esc(b.desc)}</span></span>
+      <span class="grow"><span class="strong">${esc(b.title)}</span> <span class="small dim">~${b.mins} min</span>${b.optional ? ' <span class="tag bonus-tag">bonus challenge</span>' : ''}<br><span class="small dim">${esc(b.desc)}</span></span>
       ${st === 'done' ? `<a class="btn small-btn" href="${href}">Again</a>`
         : `<span class="block-actions"><a class="btn small-btn" href="${href}">${st === 'skipped' ? 'Do it' : 'Start'}</a>${st ? '' : `<button class="btn small-btn ghost" data-act="skip" data-id="${b.id}">Skip</button>`}</span>`}
     </div>`;
@@ -412,8 +413,8 @@ function renderHome() {
           <h1 class="hero-title"><span class="jp-mark" lang="ja" aria-hidden="true" data-noruby>今日</span><span id="today-h">Today</span></h1>
           <p class="dim">${esc(welcome())}</p>
           <div class="meter-row">
-            <span class="pips" aria-hidden="true">${plan.blocks.map((b) => `<span class="pip ${b.status || ''}"></span>`).join('')}</span>
-            <span class="small dim">${doneCount} of ${required.length} done · about ${plan.minutes} min</span>
+            <span class="pips" aria-hidden="true">${plan.blocks.map((b) => `<span class="pip ${b.optional ? 'bonus ' : ''}${b.status || ''}"></span>`).join('')}</span>
+            <span class="small dim">${doneCount} of ${required.length} done${bonus ? ` <span class="bonus-c">+ bonus challenge${bonus.status === 'done' ? ' done' : ''}</span>` : ''} · about ${plan.minutes} min</span>
           </div>
           ${next ? `<div class="hero-next">
               <a class="btn primary wide" href="#/today/${next.id}">▶ ${next.status === 'skipped' ? 'Do' : 'Start'}: ${esc(next.title)}</a>

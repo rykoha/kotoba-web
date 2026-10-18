@@ -23,6 +23,7 @@
   --miss: #984806;
   --miss-soft: color-mix(in srgb, var(--miss) 12%, var(--surface));
   --gold: #f5b800;               /* highlight fills only, always with ink text */
+  --bonus-ink: #8a5a00;          /* text for bonus things (gold is too light to read as text) */
   --edge: #16131d;               /* hard "manga" shadow */
   --line: rgba(22, 19, 29, 0.1);
   --scrim: rgba(14, 12, 20, 0.6);
@@ -100,6 +101,7 @@
     --good: #63d98a;
     --miss: #ffae5e;
     --gold: #ffcc33;
+    --bonus-ink: #ffcc33;
     --edge: #000000;
     --line: rgba(255, 255, 255, 0.08);
     --scrim: rgba(0, 0, 0, 0.7);
@@ -124,6 +126,7 @@
   --good: #63d98a;
   --miss: #ffae5e;
   --gold: #ffcc33;
+  --bonus-ink: #ffcc33;
   --edge: #000000;
   --line: rgba(255, 255, 255, 0.08);
   --scrim: rgba(0, 0, 0, 0.7);
@@ -301,6 +304,9 @@ body:not(.has-tabs) .tabbar { display: none; }
   display: flex; align-items: center; gap: var(--sp-2);
 }
 .section-label::after { content: ""; flex: 1; height: 2px; background: var(--line); }
+.tag.new-tag { border-color: var(--good); color: var(--good); font-weight: 800; letter-spacing: 0.04em; }
+.new-c { color: var(--good); }
+.pair-line { border-top: 1px dashed var(--border); padding-top: var(--sp-1); margin-top: var(--sp-1); }
 .tag {
   display: inline-block; font-size: var(--fs-xs); font-weight: 800; padding: 2px var(--sp-2); border-radius: var(--r-pill);
   background: var(--surface-2); color: var(--miss); border: 1px solid var(--border); vertical-align: middle; font-style: normal;
@@ -410,6 +416,10 @@ body.has-tabs #toast { bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-are
 .pips { display: flex; gap: 6px; }
 .pip { width: 26px; height: 10px; border-radius: 3px; background: var(--surface-2); border: 1.5px solid var(--border-strong); transform: skewX(-18deg); }
 .pip.done { background: var(--good); border-color: var(--good); }
+.pip.bonus { border-style: dashed; border-color: var(--gold); background: transparent; }
+.pip.bonus.done { background: var(--gold); border-style: solid; }
+.bonus-c { color: var(--bonus-ink); font-weight: 700; }
+.tag.bonus-tag { border-color: var(--gold); color: var(--bonus-ink); }
 .pip.skipped { background: repeating-linear-gradient(45deg, var(--surface-2) 0 3px, var(--border) 3px 6px); }
 .hint { display: flex; align-items: center; gap: var(--sp-2); background: var(--surface-2); padding: var(--sp-3) var(--sp-4); }
 .link-panel { text-decoration: none; color: inherit; }
@@ -697,6 +707,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 44px
 ruby { ruby-position: over; ruby-align: center; white-space: nowrap; }   /* a word never breaks under its romaji; lines wrap between words */
 .jr { overflow-wrap: anywhere; }   /* lines can still break between words that each keep their romaji */
 .wsp { display: inline-block; width: 0.3em; }   /* the gap between romaji words (no text, so copying stays plain Japanese) */
+.jw { display: inline-block; max-width: 100%; text-indent: 0; }   /* one word of several rubies (がくせい|です|か): Safari never breaks inside it */
 rt {
   font-size: 0.5em; font-weight: 600; color: var(--dim); font-family: var(--font-ui); font-style: normal;
   letter-spacing: 0; line-height: 1; user-select: none; -webkit-user-select: none;

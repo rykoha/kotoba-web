@@ -335,6 +335,12 @@ test.describe('Today: optional weekend Rival Battle', () => {
     });
     expect(plan.finished).toBe(true);
     expect(plan.rival.status).toBe(null);
+    // The meter shows the bonus slot in its own colour, labelled as a bonus challenge.
+    await page.reload();
+    await expect(view(page).locator('.hero .pip.bonus')).toHaveCount(1);
+    await expect(view(page).locator('.hero .pip.bonus.done')).toHaveCount(0);
+    await expect(view(page).locator('.hero')).toContainText('+ bonus challenge');
+    await expect(row).toContainText('bonus challenge');
     await expectNoHorizontalScroll(page);
   });
 

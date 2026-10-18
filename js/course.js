@@ -160,9 +160,21 @@ export function practiceList(u) {
   return out;
 }
 
+/** Today's Story block outside a unit lesson day: the next chapter not cleared yet, or a replay once all are. */
+export function storyBlock() {
+  const { chapter, replay } = store.nextChapter();
+  return {
+    id: 'input', mode: 'story', mins: 5, title: replay ? 'Story replay' : 'Story',
+    desc: `${replay ? 'Replay (furigana off)' : 'Next chapter'}: ${chapter.number}. ${chapter.title} · ${chapter.en}`,
+    ctx: { chapterId: chapter.id },
+  };
+}
+
 /**
  * Today's course blocks, or null when the course is off or finished.
- * input: the unit's lesson until it has been read, then its story scene.
+ * input: the unit's lesson until it has been read, then the next story chapter. Every daily Story clears a whole
+ * chapter, so doing the story each day always moves the saga on (the unit's own scene stays on the unit page), and
+ * its answers still count toward the unit.
  * skill(weekdaySkill): on grammar and counter days (Particle Train, Shopkeeper) the unit's own practice.
  */
 export function coursePlan() {
@@ -171,15 +183,13 @@ export function coursePlan() {
   if (!c.on || !u) return null;
   const label = unitLabel(u);
   const practice = practiceList(u);
-  const story = practice.find((x) => x.mode === 'story');
   const examples = u.points.reduce((a, p) => a + p.examples.length, 0);
   let input;
-  if (!c.read.includes(u.id) || !story) {
+  if (!c.read.includes(u.id)) {
     input = { id: 'input', mode: 'lesson', modeTitle: 'Lesson', mins: 5, title: `Lesson · ${u.title}`,
       desc: `${label}: ${u.points.length} grammar points and ${examples} example sentences.`, ctx: { unitId: u.id }, unit: u.id };
   } else {
-    input = { id: 'input', mode: 'story', mins: 5, title: 'Story',
-      desc: `${label} scene: ${story.detail}.`, ctx: story.ctx, unit: u.id };
+    input = { ...storyBlock(), unit: u.id };
   }
   const skill = (weekdaySkill) => {
     if (weekdaySkill !== 'particle' && weekdaySkill !== 'shop') return null;

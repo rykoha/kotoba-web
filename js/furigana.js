@@ -107,18 +107,24 @@ function wordPieces(seg) {
   return out;
 }
 
-/** Ruby with romaji for one word (given as its romaji pieces), or null when a kanji in it has no known reading. */
+/**
+ * Ruby with romaji for one word (given as its romaji pieces), or null when a kanji in it has no known reading.
+ * A word of several pieces (がくせい|です|か) gets one ruby per piece inside an unbreakable span, rather than one
+ * ruby with spaces in its romaji: Safari spreads spaced ruby text across the word and can break it mid-line
+ * ("gaku seidesu ka").
+ */
 function romajiWord(pieces) {
   const w = pieces.join('');
   if (PARTICLE_READ[w]) return `<ruby>${escHTML(w)}<rt>${PARTICLE_READ[w]}</rt></ruby>`;
   if (!KANJI_RE.test(w) && [...w].length > CHUNK + 2) return chunkedRomaji(w);
-  let rs = pieces.map((p) => (PARTICLE_READ[p] && pieces.length > 1 ? PARTICLE_READ[p] : readingOf(p) && romaji(readingOf(p))));
-  if (rs.some((r) => !r)) {
-    // A kanji split across pieces has no reading of its own: romaji for the whole word, unspaced.
-    const reading = readingOf(w);
-    rs = reading ? [romaji(reading)] : null;
+  const rs = pieces.map((p) => (PARTICLE_READ[p] && pieces.length > 1 ? PARTICLE_READ[p] : readingOf(p) && romaji(readingOf(p))));
+  if (rs.every(Boolean)) {
+    const rubies = pieces.map((p, i) => `<ruby>${escHTML(p)}<rt>${escHTML(rs[i])}</rt></ruby>`).join('');
+    return pieces.length > 1 ? `<span class="jw">${rubies}</span>` : rubies;
   }
-  return rs ? `<ruby>${escHTML(w)}<rt>${escHTML(rs.join(' ').replace(/\s+/g, ' ').trim())}</rt></ruby>` : null;
+  // A kanji split across pieces has no reading of its own: romaji for the whole word, unspaced.
+  const reading = readingOf(w);
+  return reading ? `<ruby>${escHTML(w)}<rt>${escHTML(romaji(reading))}</rt></ruby>` : null;
 }
 
 function annotateSegment(seg, cfg) {

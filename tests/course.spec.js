@@ -185,7 +185,7 @@ test.describe('grammar reference', () => {
 });
 
 test.describe('Today follows the course', () => {
-  test('Input is the unit lesson, then its story scene; the skill block practises the unit', async ({ page }) => {
+  test('Input is the unit lesson, then the next story chapter; the skill block practises the unit', async ({ page }) => {
     await openAt(page, '2026-10-05', { current: 'p1-3', reached: ['p1-3'] });   // Monday
     await page.goto('./#/');
     expect(await blockTitles(page)).toEqual(['Garden review', "Lesson · Say where you're going and how", 'Speaking · Speak Slice', 'Skill focus · Particle Train']);
@@ -202,12 +202,12 @@ test.describe('Today follows the course', () => {
     await expect(v.getByText('Lesson read', { exact: true })).toBeVisible();
     expect((await saved(page)).course.read).toContain('p1-3');
 
-    // Tomorrow's input is the unit's story scene.
+    // Tomorrow's input is the next story chapter, played whole so it clears.
     await page.clock.setFixedTime(new Date('2026-10-06T10:00:00'));
     await page.goto('./#/');
-    await expect(view(page).locator('.block-row').nth(1)).toContainText('Unit 1.3 scene: Chapter 2');
+    await expect(view(page).locator('.block-row').nth(1)).toContainText('Next chapter: 1.');
     await view(page).locator('.block-row').nth(1).getByRole('link', { name: 'Start' }).click();
-    await expect(page.locator('#banner')).toContainText('1/6');
+    await expect(page.locator('#banner')).toContainText('1/8');
   });
 
   test('Thursday practises the unit in the shop when it has counters', async ({ page }) => {
@@ -215,10 +215,17 @@ test.describe('Today follows the course', () => {
     await page.goto('./#/');
     const titles = await blockTitles(page);
     expect(titles[3]).toBe('Skill focus · Shopkeeper');
-    // Unit 1.8 has no story scene, so the lesson stays the input.
-    expect(titles[1]).toBe('Lesson · Count things and tell the time');
+    // Its lesson is read, so the input is the story.
+    expect(titles[1]).toBe('Story');
     await view(page).locator('.block-row', { hasText: 'Skill focus' }).getByRole('link', { name: 'Start' }).click();
     await expect(page.locator('#title')).toHaveText('Shopkeeper');
+  });
+
+  test('doing only the daily story moves the saga on while a unit is still in progress', async ({ page }) => {
+    // Unit 1.1 is read but far from done; chapters 1 and 2 are cleared.
+    await openAt(page, '2026-10-06', { current: 'p1-1', read: ['p1-1'] }, { story: ['ch1', 'ch2'] });
+    await page.goto('./#/');
+    await expect(view(page).locator('.block-row').nth(1)).toContainText('Next chapter: 3.');
   });
 
   test('Quiet, Short and Sunday keep their shape with the course on', async ({ page }) => {
