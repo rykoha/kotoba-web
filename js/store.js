@@ -2,6 +2,7 @@
 // Port of ProgressStore.swift plus the daily-plan bookkeeping for the "Today" screen.
 import { PHRASES, PHRASE_BY_ID, GARDEN_CATALOG, CHAPTERS, N5_WORDS, N4_WORDS, N3_WORDS } from './data.js';
 import { itemOpen } from './levels.js';
+import { partnerOf } from './pairs.js';
 import { ALL_LESSONS, LESSON_BY_ID } from './dojo-data.js';
 import * as srs from './srs.js';
 import { blankEngine, normalizeEngine, recordGrade, dayNumber, prune } from './skills.js';
@@ -991,16 +992,27 @@ class Store {
         if (!ph.isBoss && ph.level === 'N5' && !this.s.items[ph.id]) fresh.push(GARDEN_CATALOG[ph.id]);
       }
     }
+    fresh.length = Math.min(fresh.length, Math.max(0, limit));
+    // Skip deck words already growing under another id (met in Story, Kanji Forge or the starter phrases).
+    const known = new Set(plants.map((p) => p.item.jp).concat(fresh.map((f) => f.jp)));
+    // A word's partner (男 → 女, js/pairs.js) comes in the same day, even one past the limit, so pairs stay together.
+    let extra = 0;
+    const addPartner = (item) => {
+      const p = partnerOf(item.jp);
+      if (!p || !itemOpen(p) || this.s.items[p.id] || known.has(p.jp) || !GARDEN_CATALOG[p.id]) return;
+      if (fresh.length >= limit) extra += 1;
+      fresh.push(GARDEN_CATALOG[p.id]);
+      known.add(p.jp);
+    };
+    fresh.slice().forEach(addPartner);
     if (fresh.length < limit) {
-      // Skip N5 words already growing under another id (met in Story, Kanji Forge or the starter phrases).
-      const known = new Set(plants.map((p) => p.item.jp).concat(fresh.map((f) => f.jp)));
       // Then the N4 deck, once N4 is unlocked, and the N3 deck once N3 is (js/levels.js).
       for (const w of [...N5_WORDS, ...N4_WORDS.filter(itemOpen), ...N3_WORDS.filter(itemOpen)]) {
         if (fresh.length >= limit) break;
-        if (!this.s.items[w.id] && !known.has(w.jp)) { fresh.push(GARDEN_CATALOG[w.id]); known.add(w.jp); }
+        if (!this.s.items[w.id] && !known.has(w.jp)) { fresh.push(GARDEN_CATALOG[w.id]); known.add(w.jp); addPartner(w); }
       }
     }
-    return fresh.slice(0, Math.max(0, limit));
+    return limit > 0 ? fresh.slice(0, limit + extra) : [];
   }
 
   /**

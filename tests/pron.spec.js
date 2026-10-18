@@ -136,12 +136,11 @@ test.describe('analysis', () => {
 });
 
 test.describe('where the 🎤 button appears', () => {
-  test('on new Garden cards (the N5 deck and starter phrases), after the reveal', async ({ page }) => {
+  test('on new Garden cards (the N5 deck and starter phrases), which open with the answer showing', async ({ page }) => {
     await page.goto('./#/play/garden');
     const v = view(page);
     await v.getByRole('button', { name: /Water \d+ plant/ }).click();
-    await expect(v.locator('.pron-btn')).toHaveCount(0);   // never before the answer
-    await v.getByRole('button', { name: /Check/ }).click();
+    await expect(v.locator('.new-tag')).toBeVisible();
     await expect(v.getByRole('button', { name: /Check my pronunciation of/ })).toBeVisible();
     await expectNoHorizontalScroll(page);
   });

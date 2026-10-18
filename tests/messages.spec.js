@@ -3,7 +3,7 @@
 // that pick the next message, story-tied messages, Kaito and the Master joining later, a warm welcome back after time
 // away, every message voiced with matching furigana, and the v10 -> v11 migration (tests/fixtures/progress-v10.json).
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, plainText } from './helpers.js';
 
 const FIXTURE_V10 = JSON.parse(readFileSync(new URL('./fixtures/progress-v10.json', import.meta.url), 'utf8'));
 const DAY = 86_400_000;
@@ -59,7 +59,8 @@ test.describe("Ren's Messages", () => {
     await page.goto('./#/');
     await view(page).locator('a.msg-card').click();
     const v = view(page);
-    await expect(v.locator('.msg-text').first()).toContainText('レンです');
+    await expect(v.locator('.msg-text').first()).toContainText('レン');
+    expect(await plainText(v.locator('.msg-text').first())).toContain('レンです');
     await expect(v.locator('[data-act=hear]')).toBeVisible();
     // Pick a wrong meaning: the right one is shown, nothing else happens.
     const right = "Ren is saying hello and introducing himself.";
@@ -94,7 +95,8 @@ test.describe("Ren's Messages", () => {
     await expect(v.locator('.msg-text').last()).toContainText('ひさしぶり');
     await expect(v).not.toContainText(/miss(ed)? you|where were you|lost/i);
     // The older, unanswered message is still there and can still be answered.
-    await expect(v.locator('.msg-text').first()).toContainText('レンです');
+    await expect(v.locator('.msg-text').first()).toContainText('レン');
+    expect(await plainText(v.locator('.msg-text').first())).toContain('レンです');
   });
 
   test('beginners get kana-only polite messages; at most one word is new, and tapping it plants it', async ({ page }) => {
@@ -233,7 +235,8 @@ test.describe('switching who you message', () => {
     await expect(v).toContainText("You'll meet Sora in Story chapter 6");
     await expect(v.locator('.msg-row')).toHaveCount(0);
     await v.locator('[data-act=who][data-who=ren]').click();
-    await expect(v.locator('.msg-text').first()).toContainText('レンです');
+    await expect(v.locator('.msg-text').first()).toContainText('レン');
+    expect(await plainText(v.locator('.msg-text').first())).toContain('レンです');
     await expectNoHorizontalScroll(page);
   });
 

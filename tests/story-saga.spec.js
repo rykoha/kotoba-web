@@ -1,7 +1,7 @@
 // Story saga: chapters 5-12, comprehension questions, the chapter map with challenge replays, line mining
 // ("Paste a line") into the Garden, and the v3 saved shape (migration and round-trip).
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll, plainText, pastWords } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, plainText, pastWords, gradeGardenCard } from './helpers.js';
 
 const FIXTURE_V1 = JSON.parse(readFileSync(new URL('./fixtures/progress-v1.json', import.meta.url), 'utf8'));
 const FIXTURE_V2 = JSON.parse(readFileSync(new URL('./fixtures/progress-v2.json', import.meta.url), 'utf8'));
@@ -258,18 +258,17 @@ test.describe('Paste a line (line mining)', () => {
     for (let i = 0; i < 8; i++) {
       // A grown word can also bring a Listen card (no text shown): just answer it.
       if (!(await view(page).locator('.card-dir', { hasText: 'Meaning' }).count())) {
-        await view(page).getByRole('button', { name: /Check/ }).click();
-        await view(page).getByRole('button', { name: /Knew it/ }).click();
+        await gradeGardenCard(view(page));
         continue;
       }
       const jp = await plainText(view(page).locator('.review-jp'));
-      await view(page).getByRole('button', { name: /Check/ }).click();
       if (jp === '本気の 拳だ！') {
+        // A new line opens to study, its meaning already showing.
         await expect(view(page).getByText('A fist with everything behind it!')).toBeVisible();
-        await view(page).getByRole('button', { name: /Knew it/ }).click();
+        await gradeGardenCard(view(page));
         break;
       }
-      await view(page).getByRole('button', { name: /Knew it/ }).click();
+      await gradeGardenCard(view(page));
     }
     s = await saved(page);
     expect(s.items['mine:1']).toEqual(expect.objectContaining({ level: 1, r: 1 }));

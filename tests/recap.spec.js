@@ -1,6 +1,6 @@
 // The quick recap quiz (js/recap.js) at the end of each place that teaches something new: course lessons, story
 // scenes that stop partway through a chapter, the Garden's new words and a round of new kanji in Kanji Forge.
-import { test, expect, seed, saved, view, expectNoHorizontalScroll, pastWords } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, pastWords, gradeGardenCard } from './helpers.js';
 
 /**
  * With Math.random pinned to 0, the app's shuffle always moves the first item to the end, so the right answer
@@ -157,8 +157,7 @@ test.describe('Garden new-words recap', () => {
     await v.getByRole('button', { name: /Water \d+ plant/ }).click();
     const total = Number((await v.locator('.card-review .mono').innerText()).split('/')[1]);
     for (let i = 0; i < total; i++) {
-      await v.getByRole('button', { name: /Check/ }).click();
-      await v.getByRole('button', { name: /Knew it/ }).click();
+      await gradeGardenCard(v);
     }
     await expect(v.getByText('NEW WORDS RECAP')).toBeVisible();
     const { of: n } = await counter(page);
@@ -193,8 +192,7 @@ test.describe('Garden new-words recap', () => {
     const v = view(page);
     await v.getByRole('button', { name: /Water 2 plants/ }).click();
     for (let i = 0; i < 2; i++) {
-      await v.getByRole('button', { name: /Check/ }).click();
-      await v.getByRole('button', { name: /Knew it/ }).click();
+      await gradeGardenCard(v);
     }
     await expect(v.locator('.recap')).toHaveCount(0);
   });

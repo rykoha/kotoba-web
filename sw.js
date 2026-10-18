@@ -1,6 +1,6 @@
 // Service worker: precache every file so the app works offline. Bump CACHE_VERSION on every update. Voice clips that
 // only a later JLPT level uses (LATER) are cached once that level is unlocked: the app sends { type: 'cache-level' }.
-const CACHE_VERSION = 'kotoba-beat-v52';
+const CACHE_VERSION = 'kotoba-beat-v53';
 const FILES = [
   './',
   './index.html',
@@ -71,6 +71,7 @@ const FILES = [
   './js/pron-analysis.js',
   './js/pron-tips.js',
   './js/pron.js',
+  './js/pairs.js',
   './js/readiness.js',
   './js/readings.js',
   './js/recap.js',

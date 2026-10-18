@@ -16,6 +16,7 @@ import { cardQuestion, cardName } from '../grammar-cards.js';
 import { mnemonicFor, confusablesFor, exampleFor } from '../word-help.js';
 import { readingOf } from '../furigana.js';
 import { pronButton, wordTarget } from '../pron.js';
+import { partnerOf } from '../pairs.js';
 import { esc, shuffle, delegate, melodySVG } from '../ui.js';
 import * as fx from '../fx.js';
 
@@ -46,6 +47,7 @@ export function mount(el, ctx) {
   let micOn = false;       // the mic starts when the learner taps 🎤, or on its own if Settings says so
   let hint = false;        // Say it: the example's English is showing
   let fresh = [];          // words seen for the first time this session (recapped at the end)
+  let firstSeen = false;   // the current card is a word never reviewed before: shown to study, marked NEW
   let recapOff = null;
   let practice = '';       // '' daily watering, 'extra' or 'help' (on purpose, from the overview)
   let helpData = { alike: [], example: null };   // what the help panel's 🔊 buttons play
@@ -55,12 +57,27 @@ export function mount(el, ctx) {
   const kindOf = (card) => (card.kind === 'gram' ? (card.id.startsWith('cj:') ? 'conj' : 'grammar') : card.dir);
 
   function begin(cards, mode = '') {
-    session = shuffle(cards);
+    session = keepPairsTogether(shuffle(cards));
     practice = mode;
-    fresh = session.filter((c) => c.kind === 'word' && c.dir === 'mean' && !(store.item(c.id)?.r)).map((c) => c.item);
+    fresh = session.filter(isFirstSight).map((c) => c.item);
     position = 0;
     helpShown = new Set();
     openCard();
+  }
+
+  /** A word card never reviewed before: it opens as a study card, marked NEW. */
+  function isFirstSight(c) { return c.kind === 'word' && c.dir === 'mean' && !(store.item(c.id)?.r); }
+
+  /** New partner words (男 and 女, js/pairs.js) meet back to back, so they're learned as a pair. */
+  function keepPairsTogether(cards) {
+    const out = cards.slice();
+    for (let i = 0; i < out.length; i++) {
+      if (!isFirstSight(out[i])) continue;
+      const p = partnerOf(out[i].item.jp);
+      const j = p ? out.findIndex((c, k) => k > i + 1 && isFirstSight(c) && c.item.jp === p.jp) : -1;
+      if (j > 0) out.splice(i + 1, 0, ...out.splice(j, 1));
+    }
+    return out;
   }
 
   function startDaily() { begin(store.dailyGardenQueue(cap).queue); }
@@ -75,6 +92,7 @@ export function mount(el, ctx) {
     hint = false;
     recognizer.stop();
     const card = cur();
+    firstSeen = !!card && isFirstSight(card);
     if (!card) { render(); return; }
     const st = store.cardState(card);
     const key = `${card.kind}:${card.dir || ''}:${card.id}`;
@@ -93,7 +111,7 @@ export function mount(el, ctx) {
       render();
       return;
     }
-    if (card.dir === 'listen') speaker.speak(sayOf(card.item), { mps: 3.5 });
+    if (card.dir === 'listen' || firstSeen) speaker.speak(sayOf(card.item), { mps: 3.5 });
     // "Start the mic on its own" (Settings): Say it cards listen as soon as they open.
     if (card.dir === 'say' && speech && store.settings.autoMic && !revealed) { micOn = true; render(); listen(card); }
   }
@@ -192,6 +210,7 @@ export function mount(el, ctx) {
     const kind = kindOf(card);
     const st = store.cardState(card);
     return `<div class="row-between card-head"><span class="tag card-dir card-dir-${kind}">${LABELS[kind]}</span>
+      ${firstSeen ? '<span class="tag new-tag" title="A word you haven\'t met before: have a look first">🌱 NEW</span>' : ''}
       ${st && st.help ? '<span class="tag" title="This one has been slipping: help comes first">🩹</span>' : ''}
       <span class="small dim mono">${position + 1} / ${session.length}</span></div>`;
   }
@@ -224,13 +243,22 @@ export function mount(el, ctx) {
            ${speech ? (micOn ? `<p class="small dim" id="gd-heard" aria-live="polite">${heard ? `Heard: 「${esc(heard)}」` : 'Starting the mic…'}</p>`
              : '<button class="btn wide" data-act="mic">🎤 Tap to answer out loud</button><p class="small dim">Or say it, then Check and grade yourself.</p>')
              : `<p class="dim">${ctx.quiet ? 'Quiet mode: say it in your head' : 'Say it out loud'}, then check and grade yourself.</p>`}`;
+    } else if (firstSeen) {
+      // A new word isn't a test: it shows the answer to study, with its partner if it has one. The recap at the end
+      // of the watering asks it back.
+      const p = partnerOf(item.jp);
+      body = `<p class="small new-c strong">New word: have a look and say it out loud</p>${answerBlock(item)}
+        ${p ? `<p class="small pair-line">Goes with <span lang="ja">${esc(p.jp)}</span> (${esc(p.reading)}) · ${esc(p.en)}</p>` : ''}`;
     } else {
       body = revealed ? answerBlock(item)
         : `<div class="review-jp"${item.id.includes('|') ? ' data-noruby' : ''}>${esc(item.jp)}</div>
            ${item.deck === 'n5' ? '<p class="tiny dim">N5 word</p>' : ''}
            <p class="dim">${ctx.quiet ? 'Say it in your head' : 'Say it out loud'} and recall the meaning, then check.</p>`;
     }
-    const buttons = revealed
+    const buttons = firstSeen
+      ? `<button class="btn primary wide" data-act="knew">Got it ▶</button>
+         <div class="row2"><button class="btn ghost small-btn" data-act="hear">🔊 Hear it again</button><button class="btn ghost small-btn" data-act="slow">🐢 Slowly</button></div>${pronRow(card)}`
+      : revealed
       ? (card.dir === 'say' && heardOk ? '<button class="btn primary wide" data-act="knew">Next ▶</button>' : gradeButtons(card))
       : `<button class="btn primary wide" data-act="check">👁 Check</button>`;
     el.innerHTML = `<div class="card-review card-${card.dir}">${head(card)}${body}<div class="spacer"></div>${buttons}</div>`;
@@ -453,6 +481,10 @@ export function mount(el, ctx) {
     if (card.kind === 'gram') {
       if (gram && gram.picked < 0 && /^[1-4]$/.test(e.key) && +e.key <= gram.opts.length) { e.preventDefault(); pickGrammar(+e.key - 1); }
       else if (gram && gram.picked >= 0 && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight')) { e.preventDefault(); nextGrammar(); }
+      return;
+    }
+    if (firstSeen && cur()?.kind === 'word') {
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); answer(true); }
       return;
     }
     if (e.key === ' ' || e.key === 'Enter') {

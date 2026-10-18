@@ -3,7 +3,7 @@ import { store, DAILY_REVIEW_CAP, DAILY_REVIEW_CAP_SHORT } from './store.js';
 import { MODE_BY_ID } from './data.js';
 import { TRACKS } from './dojo-data.js';
 import { BRUSH_KANA } from './brush-data.js';
-import { coursePlan } from './course.js';
+import { coursePlan, storyBlock } from './course.js';
 import { attackPool, unlockedRivals, MIN_ITEMS } from './rival-items.js';
 
 /**
@@ -101,15 +101,10 @@ export function todayPlan(date = new Date()) {
     ctx: { cap },
   });
 
-  // With the course on, Input is the current unit's lesson (then its story scene), and grammar/counter skill days
-  // practise the unit (see coursePlan in course.js). Otherwise the next story chapter, as before.
+  // With the course on, Input is the current unit's lesson until it is read, then the next story chapter, and
+  // grammar/counter skill days practise the unit (see coursePlan in course.js). Otherwise the next story chapter.
   const course = coursePlan();
-  const { chapter, replay } = store.nextChapter();
-  if (!(short && beginner)) blocks.push(course ? course.input : {
-    id: 'input', mode: 'story', mins: 5, title: replay ? 'Story replay' : 'Story',
-    desc: `${replay ? 'Replay (furigana off)' : 'Next scene'}: ${chapter.number}. ${chapter.title} · ${chapter.en}`,
-    ctx: { chapterId: chapter.id },
-  });
+  if (!(short && beginner)) blocks.push(course ? course.input : storyBlock());
 
   if (!short) {
     const weekday = date.getDay();

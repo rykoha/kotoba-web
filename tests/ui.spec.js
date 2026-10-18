@@ -180,14 +180,20 @@ test.describe('readability', () => {
     await page.goto('./#/modes');
     const r = await page.evaluate(async () => {
       const out = {};
-      for (const text of ['よろしくおねがいします', 'わたしはがくせいです', 'ありがとうございます', 'よろしくお願いします', 'レンです']) {
+      for (const text of ['よろしくおねがいします', 'わたしはがくせいです', 'ありがとうございます', 'よろしくお願いします', 'レンです', 'がくせいですか']) {
         const p = document.createElement('p');
         p.style.width = '120px';
         p.lang = 'ja';
         p.textContent = text;
         document.getElementById('view').prepend(p);
         await new Promise((res) => setTimeout(res, 100));
-        out[text] = { rts: [...p.querySelectorAll('rt')].map((x) => x.textContent), gaps: p.querySelectorAll('.wsp').length, plain: p.textContent };
+        // A word is one ruby, or one .jw span of rubies (one per romaji piece, so no ruby text holds a space).
+        const words = [...p.querySelectorAll('ruby, .jw')].filter((w) => !w.closest('.jw') || w.matches('.jw'));
+        out[text] = {
+          rts: words.map((w) => [...w.querySelectorAll('rt')].map((x) => x.textContent).join(' ')),
+          spaced: [...p.querySelectorAll('rt')].some((x) => x.textContent.includes(' ')),
+          gaps: p.querySelectorAll('.wsp').length, plain: p.textContent,
+        };
       }
       return out;
     });
@@ -197,7 +203,8 @@ test.describe('readability', () => {
     expect(r['よろしくお願いします'].rts).toEqual(['yoroshiku', 'onegaishimasu']);   // a する verb stays one word
     expect(r['レンです'].rts).toEqual(['ren desu']);   // です gets its own romaji word, with no gap in the Japanese
     expect(r['レンです'].gaps).toBe(0);
-    for (const v of Object.values(r)) expect(v.gaps).toBe(v.rts.length - 1);
+    expect(r['がくせいですか'].rts).toEqual(['gakusei desu ka']);
+    for (const v of Object.values(r)) { expect(v.gaps).toBe(v.rts.length - 1); expect(v.spaced).toBe(false); }
     expect(r['よろしくおねがいします'].plain).toBe('よろしくyoroshikuおねがいしますonegaishimasu');   // the gap adds no text
   });
 
