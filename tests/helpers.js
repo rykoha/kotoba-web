@@ -74,3 +74,16 @@ export async function pastWords(v) {
   if (await skip.count()) await skip.first().click();
   await expect(v.locator('.line-jp')).toBeVisible();
 }
+
+/**
+ * Answers the Garden word card on screen: a new word (shown to study) takes "Got it"; any other card is checked and
+ * graded Knew it / Forgot.
+ */
+export async function gradeGardenCard(v, ok = true) {
+  const got = v.getByRole('button', { name: /Got it/ });
+  await expect(v.locator('[data-act=check], [data-act=knew]').first()).toBeVisible();
+  if (await got.count()) { await got.click(); return 'new'; }
+  await v.locator('[data-act=check]').click();
+  await v.getByRole('button', { name: ok ? /Knew it/ : /Forgot/ }).click();
+  return 'review';
+}

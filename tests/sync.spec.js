@@ -1,6 +1,6 @@
 // Cross-device sync through a private GitHub Gist: the pure merge in store.js, and the sync itself against a mocked
 // api.github.com (no real network). Sync must never lose progress, never block studying and never leak the token.
-import { test, expect, seed, saved, view, expectNoHorizontalScroll, STORAGE_KEY } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, STORAGE_KEY, gradeGardenCard } from './helpers.js';
 
 const SYNC_KEY = 'kotobaBeat.sync';
 const TOKEN = 'github_pat_11ABCDEFG0123456789_abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRS';
@@ -448,8 +448,7 @@ test.describe('sync across devices (mocked GitHub)', () => {
     await page.goto('./#/play/garden');
     // Studying works while sync fails, with nothing scary on screen.
     await view(page).getByRole('button', { name: /Water \d+ plant/ }).click();
-    await view(page).getByRole('button', { name: /Check/ }).click();
-    await view(page).getByRole('button', { name: /Knew it/ }).click();
+    await gradeGardenCard(view(page));
     await expect(page.locator('#toast')).toHaveCount(0);
     await expect(page.getByText(/GitHub|sync/i)).toHaveCount(0);
     await page.goto('./#/settings');

@@ -1,5 +1,5 @@
 // Every mode loads and completes at least one real interaction, and the result is saved.
-import { test, expect, seed, saved, plainText, view, pastWords, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, plainText, view, pastWords, expectNoHorizontalScroll, gradeGardenCard } from './helpers.js';
 
 test.describe('modes', () => {
   test('Reading Dojo: learn the first lesson and clear its quiz', async ({ page }) => {
@@ -39,8 +39,7 @@ test.describe('modes', () => {
     await page.goto('./#/play/garden');
     const v = view(page);
     await v.getByRole('button', { name: /Water \d+ plant/ }).click();
-    await v.getByRole('button', { name: /Check/ }).click();
-    await v.getByRole('button', { name: /Knew it/ }).click();
+    await gradeGardenCard(v);
     await expect(v.locator('.card-review .mono')).toHaveText(/^2 \//);
     const s = await saved(page);
     const reviewed = Object.values(s.items).filter((p) => p.r === 1);

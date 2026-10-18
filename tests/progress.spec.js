@@ -1,7 +1,7 @@
 // Progress safety: saved progress from the current version loads with nothing lost, export/import round-trips,
 // and everything survives a reload.
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view } from './helpers.js';
+import { test, expect, seed, saved, view, gradeGardenCard } from './helpers.js';
 
 const FIXTURE = JSON.parse(readFileSync(new URL('./fixtures/progress-v1.json', import.meta.url), 'utf8'));
 const FIXTURE_V2 = JSON.parse(readFileSync(new URL('./fixtures/progress-v2.json', import.meta.url), 'utf8'));
@@ -188,8 +188,7 @@ test.describe('reload persistence', () => {
   test('reviews, plan progress and settings survive a reload', async ({ page }) => {
     await page.goto('./#/play/garden');
     await view(page).getByRole('button', { name: /Water \d+ plant/ }).click();
-    await view(page).getByRole('button', { name: /Check/ }).click();
-    await view(page).getByRole('button', { name: /Knew it/ }).click();
+    await gradeGardenCard(view(page));
     await page.goto('./#/');
     await view(page).locator('.block-row').nth(1).getByRole('button', { name: 'Skip' }).click();
     await page.goto('./#/settings');

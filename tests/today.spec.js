@@ -1,5 +1,5 @@
 // The guided "Today" plan: its shape for every weekday, Short and Quiet sessions, beginners, and running its blocks.
-import { test, expect, seed, saved, readerState, view } from './helpers.js';
+import { test, expect, seed, saved, readerState, view, gradeGardenCard } from './helpers.js';
 
 // Two weeks from Monday 5 October 2026: an A week, then a B week (the skill block alternates between them).
 // Speaking rotates Speak Slice, Sentence Builder, Rhythm day by day; Quiet mode swaps in a listening mode instead
@@ -168,8 +168,7 @@ test.describe('running the plan', () => {
     const v = view(page);
     for (let i = 0; i < 25; i++) {
       if (await page.locator('#banner .banner.done').isVisible()) break;
-      await v.getByRole('button', { name: /Check/ }).click();
-      await v.getByRole('button', { name: /Knew it/ }).click();
+      await gradeGardenCard(v);
     }
     await expect(page.locator('#banner')).toContainText('Block 1 done');
     expect((await saved(page)).days['2026-10-07'].rev).toBe(5);   // 5 new words a day
