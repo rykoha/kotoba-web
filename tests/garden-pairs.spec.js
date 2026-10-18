@@ -7,7 +7,7 @@ const T = NOW.getTime();
 const DAY = 86_400_000;
 const later = () => ({ level: 4, due: T + 5 * DAY, best: 0, r: 6, pl: T - 30 * DAY, s: 8, d: 5, lr: T - 8 * DAY });
 
-/** Saved items where every starter phrase and every N5 word before 男 is planted except the last `left` of them. */
+/** Saved items where every starter phrase and every N5 word before a given word is planted except the last `left` of them. */
 async function itemsBefore(page, jp, left) {
   await page.goto('./');
   const ids = await page.evaluate(async ([jp, left]) => {
@@ -16,12 +16,15 @@ async function itemsBefore(page, jp, left) {
     const phrases = PHRASES.filter((p) => !p.isBoss && p.level === 'N5').map((p) => p.id);
     return [...phrases, ...N5_WORDS.slice(0, i - left).map((w) => w.id)];
   }, [jp, left]);
+  await page.goto('about:blank');   // so the next goto is a fresh page load (seed() runs on load)
   return Object.fromEntries(ids.map((id) => [id, later()]));
 }
 
 async function open(page, items, hash = '#/play/garden') {
   await page.clock.setFixedTime(NOW);
-  await seed(page, { v: 6, settings: { hideIosHint: true }, days: {}, items });
+  // Today's new Listen/Say it cards are used up, so the watering is just the new words.
+  const days = { '2026-10-10': { ok: 0, tot: 0, rev: 0, newc: 0, newd: 9, newg: 9, studied: true, blocks: {} } };
+  await seed(page, { v: 6, settings: { hideIosHint: true }, days, items });
   await page.goto('./' + hash);
 }
 
@@ -36,20 +39,22 @@ test('every pair is in a deck', async ({ page }) => {
 });
 
 test("a word's partner comes in the same day, even one past the daily limit", async ({ page }) => {
-  await open(page, await itemsBefore(page, '男', 4));
+  await open(page, await itemsBefore(page, '大きい', 4));
   const fresh = await page.evaluate(async () => (await import('./js/store.js')).store.freshWords(5).map((w) => w.jp));
-  expect(fresh.length).toBe(6);
-  expect(fresh.slice(-2)).toEqual(['男', '女']);
+  expect(fresh).toEqual(['できる', 'なる', 'やる', '違う', '大きい', '小さい']);
+  expect(fresh.slice(-2)).toEqual(['大きい', '小さい']);
   // A partner already growing isn't added again.
-  const items = await itemsBefore(page, '男', 4);
-  await open(page, { ...items, 'n5:女': later() });
-  const fresh2 = await page.evaluate(async () => (await import('./js/store.js')).store.freshWords(5).map((w) => w.jp));
-  expect(fresh2).not.toContain('女');
+  const fresh2 = await page.evaluate(async () => {
+    const { store } = await import('./js/store.js');
+    store.s.items['n5:小さい'] = { level: 4, due: Date.now() + 5 * 86_400_000, best: 0, r: 6, pl: 1, s: 8, d: 5, lr: 1 };
+    return store.freshWords(5).map((w) => w.jp);
+  });
+  expect(fresh2).not.toContain('小さい');
   expect(fresh2.length).toBe(5);
 });
 
 test('new words are marked NEW, shown to study, and partners meet back to back', async ({ page }) => {
-  await open(page, await itemsBefore(page, '男', 4));
+  await open(page, await itemsBefore(page, '大きい', 4));
   const v = view(page);
   await v.locator('[data-act=water]').click();
   const seen = [];
@@ -57,19 +62,19 @@ test('new words are marked NEW, shown to study, and partners meet back to back',
     const card = v.locator('.card-review');
     await expect(card.locator('.new-tag')).toContainText('NEW');
     await expect(card).toContainText('New word');
-    await expect(card.getByRole('button', { name: /Check/ })).toHaveCount(0);   // not a test
+    await expect(card.locator('[data-act=check]')).toHaveCount(0);   // not a test
     const jp = await page.evaluate(() => {
       const c = document.querySelector('#view .review-jp').cloneNode(true);
       c.querySelectorAll('rt').forEach((r) => r.remove());
       return c.textContent.trim();
     });
     seen.push(jp);
-    if (jp === '男') await expect(card.locator('.pair-line')).toContainText('女');
+    if (jp === '大きい') await expect(card.locator('.pair-line')).toContainText('小さい');
     if (i === 0) await expectNoHorizontalScroll(page);
     await card.getByRole('button', { name: /Got it/ }).click();
   }
-  const m = seen.indexOf('男');
-  const f = seen.indexOf('女');
+  const m = seen.indexOf('大きい');
+  const f = seen.indexOf('小さい');
   expect(m).toBeGreaterThanOrEqual(0);
   expect(Math.abs(m - f)).toBe(1);
   // The recap then asks the new words back.
@@ -80,12 +85,12 @@ test('a word seen before has no NEW mark and is tested as usual', async ({ page 
   await open(page, { 'n5:猫': { ...later(), due: T - 1000 } });
   await page.evaluate(async () => {
     const { store } = await import('./js/store.js');
-    store.day().newc = 5;
+    store.day().newc = 5;   // no new words today
     store.save();
   });
   await page.reload();
   const v = view(page);
   await v.locator('[data-act=water]').click();
   await expect(v.locator('.new-tag')).toHaveCount(0);
-  await expect(v.getByRole('button', { name: /Check/ })).toBeVisible();
+  await expect(v.locator('[data-act=check]')).toBeVisible();
 });

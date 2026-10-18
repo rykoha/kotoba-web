@@ -325,7 +325,7 @@ test.describe('Today: optional weekend Rival Battle', () => {
     await seed(page, await learnerState(page));
     await page.goto('./#/');
     const row = view(page).locator('.block-row', { hasText: 'Rival Battle' });
-    await expect(row).toContainText('optional');
+    await expect(row).toContainText('Optional');
     const plan = await page.evaluate(async () => {
       const { store } = await import('./js/store.js');
       const { todayPlan } = await import('./js/today.js');

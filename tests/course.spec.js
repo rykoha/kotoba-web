@@ -223,7 +223,7 @@ test.describe('Today follows the course', () => {
 
   test('doing only the daily story moves the saga on while a unit is still in progress', async ({ page }) => {
     // Unit 1.1 is read but far from done; chapters 1 and 2 are cleared.
-    await openAt(page, '2026-10-06', { current: 'p1-1', read: ['p1-1'] }, { story: ['ch1', 'ch2'] });
+    await openAt(page, '2026-10-06', { current: 'p1-1', read: ['p1-1'] }, { chapters: ['ch1', 'ch2'] });
     await page.goto('./#/');
     await expect(view(page).locator('.block-row').nth(1)).toContainText('Next chapter: 3.');
   });

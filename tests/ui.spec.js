@@ -188,7 +188,7 @@ test.describe('readability', () => {
         document.getElementById('view').prepend(p);
         await new Promise((res) => setTimeout(res, 100));
         // A word is one ruby, or one .jw span of rubies (one per romaji piece, so no ruby text holds a space).
-        const words = [...p.querySelectorAll(':scope > ruby, :scope > .jw')];
+        const words = [...p.querySelectorAll('ruby, .jw')].filter((w) => !w.closest('.jw') || w.matches('.jw'));
         out[text] = {
           rts: words.map((w) => [...w.querySelectorAll('rt')].map((x) => x.textContent).join(' ')),
           spaced: [...p.querySelectorAll('rt')].some((x) => x.textContent.includes(' ')),
