@@ -46,7 +46,7 @@ test.describe('saved progress v5 → v6', () => {
     await seed(page, FIXTURE_V5);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(13);   // migrated on to the current version
+    expect(s.v).toBe(14);   // migrated on to the current version
     for (const [id, p] of Object.entries(FIXTURE_V5.items)) {
       for (const k of ['level', 'due', 'best', 'r', 'pl', 's', 'd', 'lr']) expect(s.items[id][k], `${id}.${k}`).toBe(p[k]);
     }

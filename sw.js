@@ -1,6 +1,10 @@
 // Service worker: precache every file so the app works offline. Bump CACHE_VERSION on every update. Voice clips that
 // only a later JLPT level uses (LATER) are cached once that level is unlocked: the app sends { type: 'cache-level' }.
-const CACHE_VERSION = 'kotoba-beat-v53';
+const CACHE_VERSION = 'kotoba-beat-v54';
+// The Manga Reader's big optional files (manga/: the dictionary and the text reader, about 11 MB) are not precached:
+// they're fetched the first time the reader needs them and kept in their own cache, which app updates leave alone.
+// Bump MANGA_CACHE only when a file in manga/ changes.
+const MANGA_CACHE = 'kotoba-beat-manga-1';
 const FILES = [
   './',
   './index.html',
@@ -16,6 +20,7 @@ const FILES = [
   './js/course-data.js',
   './js/course.js',
   './js/data.js',
+  './js/dictation-check.js',
   './js/dojo-data.js',
   './js/encounter-data.js',
   './js/exam-art.js',
@@ -43,6 +48,10 @@ const FILES = [
   './js/library-n5.js',
   './js/lookup-data.js',
   './js/lookup.js',
+  './js/manga-dict.js',
+  './js/manga-ocr.js',
+  './js/manga-pages.js',
+  './js/manga-samples.js',
   './js/messages-cast.js',
   './js/messages-data.js',
   './js/messages.js',
@@ -62,6 +71,7 @@ const FILES = [
   './js/n4-speaking.js',
   './js/n4.js',
   './js/n5.js',
+  './js/pairs.js',
   './js/pitch-coach.js',
   './js/pitch-score.js',
   './js/placement.js',
@@ -71,7 +81,6 @@ const FILES = [
   './js/pron-analysis.js',
   './js/pron-tips.js',
   './js/pron.js',
-  './js/pairs.js',
   './js/readiness.js',
   './js/readings.js',
   './js/recap.js',
@@ -97,6 +106,7 @@ const FILES = [
   './js/modes/brush.js',
   './js/modes/build.js',
   './js/modes/conj.js',
+  './js/modes/dictation.js',
   './js/modes/dojo.js',
   './js/modes/duel.js',
   './js/modes/forge.js',
@@ -104,6 +114,7 @@ const FILES = [
   './js/modes/kata.js',
   './js/modes/library.js',
   './js/modes/listen.js',
+  './js/modes/manga.js',
   './js/modes/meet.js',
   './js/modes/numbers.js',
   './js/modes/particle.js',
@@ -115,8 +126,6 @@ const FILES = [
   './js/modes/story.js',
   './js/modes/type.js',
   './js/modes/walk.js',
-  './js/modes/dictation.js',
-  './js/dictation-check.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -30939,7 +30948,7 @@ self.addEventListener('message', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('kotoba-beat-') && k !== CACHE_VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('kotoba-beat-') && k !== CACHE_VERSION && k !== MANGA_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -30976,11 +30985,22 @@ async function rangeResponse(req) {
   });
 }
 
+/** A Manga Reader file: from its own cache, else fetched once and kept there. */
+async function mangaFile(req) {
+  const cache = await caches.open(MANGA_CACHE);
+  const hit = await cache.match(req, { ignoreSearch: true });
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res.status === 200 && res.type === 'basic') await cache.put(req, res.clone());
+  return res;
+}
+
 // Cache first (offline), falling back to the network; navigations fall back to the cached shell.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   if (req.headers.has('range')) { event.respondWith(rangeResponse(req).catch(() => fetch(req))); return; }
+  if (new URL(req.url).pathname.includes('/manga/')) { event.respondWith(mangaFile(req)); return; }
   event.respondWith(
     caches.match(req, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit;

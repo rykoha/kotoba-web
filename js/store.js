@@ -34,7 +34,7 @@ export const HELP_CLEAR = 2;
 export const SKILLS = ['kana', 'kanji', 'vocab', 'grammar', 'listening', 'pitch', 'speaking', 'counters'];
 
 /** Version of the saved progress shape. Bump it and add a step to MIGRATIONS whenever the shape changes. */
-export const STATE_VERSION = 13;
+export const STATE_VERSION = 14;
 
 function blank() {
   return {
@@ -65,6 +65,7 @@ function blank() {
     exam: blankExam(),  // added in v9: mock JLPT results and readiness (see blankExam)
     messages: blankMessages(),   // added in v11: Ren's Messages (see blankMessages and js/messages.js)
     library: blankLibrary(),     // added in v13: Library readers read (see blankLibrary and js/modes/library.js)
+    mywords: {},        // added in v14: My words, Garden cards for words met in the Manga Reader (see normalizeMyWords)
   };
 }
 
@@ -146,6 +147,35 @@ function normalizeLibrary(raw) {
 }
 
 /** Two devices' Library: each reader's larger count, latest time and best score. */
+/**
+ * My words (v14): words the learner looked up in the Manga Reader and kept, each a Garden card 'my:<written form>'.
+ * Written form -> { r (reading in kana), en (meaning), at (ms added) }. The card's id is the word itself, so two
+ * devices that add the same word make the same card, and a merge is a plain union.
+ */
+export const MYWORD_MAX = 2000;
+export const myWordId = (jp) => 'my:' + jp;
+
+function normalizeMyWords(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [jp, w] of Object.entries(raw)) {
+    if (!jp || jp.length > 40 || !/[ぁ-ゖァ-ヺ一-鿿々]/.test(jp) || !w || typeof w !== 'object') continue;
+    out[jp] = {
+      r: typeof w.r === 'string' ? w.r.slice(0, 80) : '',
+      en: typeof w.en === 'string' ? w.en.slice(0, 200) : '',
+      at: Math.max(0, Number(w.at) || 0),
+    };
+  }
+  return out;
+}
+
+/** Two devices' My words: every word from both; a word on both keeps the copy added first. */
+function mergeMyWords(a, b) {
+  const out = { ...a };
+  for (const [jp, w] of Object.entries(b)) if (!out[jp] || (w.at && (!out[jp].at || w.at < out[jp].at))) out[jp] = { ...w };
+  return out;
+}
+
 function mergeLibrary(a, b) {
   const read = { ...a.read };
   for (const [id, r] of Object.entries(b.read)) {
@@ -267,6 +297,8 @@ const MIGRATIONS = {
   11: (raw) => ({ ...raw, settings: { showAllLevels: false, ...(raw.settings || {}) } }),
   // v12 -> v13: the Library. No readers read yet; everything else passes through untouched.
   12: (raw) => ({ ...raw, library: raw.library && typeof raw.library === 'object' ? raw.library : blankLibrary() }),
+  // v13 -> v14: My words from the Manga Reader. None yet; everything else passes through untouched.
+  13: (raw) => ({ ...raw, mywords: raw.mywords && typeof raw.mywords === 'object' ? raw.mywords : {} }),
 };
 
 /** Adds the guided-course field with defaults. Self-contained: it touches nothing else in the blob. */
@@ -363,6 +395,7 @@ function normalize(input) {
   s.exam = normalizeExam(raw.exam);
   s.messages = normalizeMessages(raw.messages);
   s.library = normalizeLibrary(raw.library);
+  s.mywords = normalizeMyWords(raw.mywords);
   return s;
 }
 
@@ -598,6 +631,7 @@ function mergeMined(a, b, aItems, bItems) {
  *   and each grammar card the same way, on its own, with its miss count and needs-help mark.
  * - Cleared lessons, chapters, forged kanji, course units: union.
  * - Counters (days, story replays, course tallies, skill tallies, Library readers read): the larger value.
+ * - My words (v14): union; each word's Garden card merges like any other review item.
  * - Settings and the course on/off switch: this device's (they stay per device).
  */
 export function mergeProgress(local, remote, now = Date.now()) {
@@ -666,6 +700,7 @@ export function mergeProgress(local, remote, now = Date.now()) {
   for (const [lv, r] of Object.entries(b.exam.real)) if (!real[lv] || r.at > real[lv].at) real[lv] = { ...r };
   out.messages = mergeMessages(a.messages, b.messages);
   out.library = mergeLibrary(a.library, b.library);
+  out.mywords = mergeMyWords(a.mywords, b.mywords);
   out.exam = {
     history: [...hist.values()].sort((x, y) => x.at - y.at).slice(-EXAM_HISTORY_MAX).map((h) => ({ ...h, parts: { ...h.parts } })),
     real, later,
@@ -962,9 +997,14 @@ class Store {
   }
 
   // ----- garden -----
-  /** The Garden card for a progress id: the built-in catalog, or a line the learner mined in Story. */
+  /** The Garden card for a progress id: the built-in catalog, a line the learner mined in Story, or one of My words. */
   catalogItem(id) {
     if (GARDEN_CATALOG[id]) return GARDEN_CATALOG[id];
+    if (id.startsWith('my:')) {
+      const w = this.s.mywords[id.slice(3)];
+      // Like a mined line, it has no voice clip, so it's asked by meaning only (mined: true).
+      return w ? { id, jp: id.slice(3), reading: w.r, en: w.en, mined: true, my: true } : null;
+    }
     if (!id.startsWith('mine:')) return null;
     const m = this.s.saga.mined.find((x) => x.id === id);
     return m ? { id: m.id, jp: m.jp, reading: m.reading, en: m.en, mined: true } : null;
@@ -1175,6 +1215,33 @@ class Store {
     this.s.items[id] = { level: 0, due: 0, best: 0, r: 0, pl: Date.now() };
     this.save();
     return id;
+  }
+
+  // ----- My words (Manga Reader) -----
+  get myWords() {
+    return Object.entries(this.s.mywords).map(([jp, w]) => ({ id: myWordId(jp), jp, reading: w.r, en: w.en, at: w.at })).sort((a, b) => b.at - a.at);
+  }
+
+  /** Keeps a word as one of My words and plants its Garden card (due now, as a new word). Returns its id. */
+  addMyWord({ jp, reading = '', en = '' }) {
+    jp = String(jp).trim().slice(0, 40);
+    if (!jp) return null;
+    const id = myWordId(jp);
+    if (!this.s.mywords[jp]) {
+      if (Object.keys(this.s.mywords).length >= MYWORD_MAX) return null;
+      this.s.mywords[jp] = { r: String(reading).slice(0, 80), en: String(en).slice(0, 200), at: Date.now() };
+    }
+    if (!this.s.items[id]) this.s.items[id] = { level: 0, due: 0, best: 0, r: 0, pl: Date.now() };
+    this.save();
+    return id;
+  }
+
+  /** Removes one of My words and its Garden card. */
+  deleteMyWord(id) {
+    if (!id.startsWith('my:')) return;
+    delete this.s.mywords[id.slice(3)];
+    delete this.s.items[id];
+    this.save();
   }
 
   /** Removes a mined line and its Garden card. */

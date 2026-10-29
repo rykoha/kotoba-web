@@ -25,6 +25,7 @@ import * as numbers from './modes/numbers.js';
 import * as rival from './modes/rival.js';
 import * as meet from './modes/meet.js';
 import * as library from './modes/library.js';
+import * as manga from './modes/manga.js';
 import * as walk from './modes/walk.js';
 import * as type from './modes/type.js';
 import * as dictation from './modes/dictation.js';
@@ -45,13 +46,13 @@ import { initPron, closePron } from './pron.js';
 import { closeCoach } from './pitch-coach.js';
 import { initIcons } from './icons.js';
 
-const MOUNTS = { dojo, brush, garden, story, particle, forge, rhythm, duel, slice, shop, listen, conj, build, kata, numbers, rival, meet, library, walk, type, dictation };
+const MOUNTS = { dojo, brush, garden, story, particle, forge, rhythm, duel, slice, shop, listen, conj, build, kata, numbers, rival, meet, library, manga, walk, type, dictation };
 /** Screens the Today plan can open that aren't modes (the course lesson). */
 const TODAY_MOUNTS = { ...MOUNTS, lesson: { mount: course.mountLesson } };
 const modeTitle = (id) => MODE_BY_ID[id]?.title || 'Lesson';
 /** A one-glyph badge per mode (decorative; the English title is the label). */
 const MODE_GLYPH = { dojo: '読', brush: '書', garden: '庭', story: '話', particle: 'は', forge: '漢', rhythm: '拍', duel: '音', slice: '斬', shop: '店',
-  listen: '耳', conj: '活', build: '組', kata: 'カ', numbers: '数', rival: '戦', meet: '会', library: '本', walk: '歩', type: '打', dictation: '聴' };
+  listen: '耳', conj: '活', build: '組', kata: 'カ', numbers: '数', rival: '戦', meet: '会', library: '本', manga: '漫', walk: '歩', type: '打', dictation: '聴' };
 const TABS = { '': 'today', modes: 'modes', garden: 'garden', progress: 'progress', settings: 'settings' };
 
 const view = document.getElementById('view');

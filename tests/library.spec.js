@@ -107,7 +107,7 @@ test.describe('Library', () => {
     }
     await expect(v.getByText(/more words read/)).toBeVisible();
     const s = await saved(page);
-    expect(s.v).toBe(13);
+    expect(s.v).toBe(14);
     expect(s.library.read['n5-morning'].n).toBe(1);
     expect(s.library.read['n5-morning'].qt).toBe(2);
     // New words from the story can be planted from the end screen.
@@ -179,7 +179,7 @@ test.describe('Library', () => {
     expect(r.again).toEqual(r.merged);
     expect(r.items).toContain('n5:雨');
     const s = await saved(page);
-    expect(s.v).toBe(13);
+    expect(s.v).toBe(14);
     expect(s.library.read['n5-morning'].n).toBe(1);
   });
 });

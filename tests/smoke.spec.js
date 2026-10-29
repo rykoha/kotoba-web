@@ -11,7 +11,7 @@ test('home leads with Today and its next step', async ({ page }) => {
 
 test('the Modes screen lists every mode', async ({ page }) => {
   await page.goto('./#/modes');
-  await expect(view(page).locator('.mode-card')).toHaveCount(21);
+  await expect(view(page).locator('.mode-card')).toHaveCount(22);
   await expectNoHorizontalScroll(page);
 });
 

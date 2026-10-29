@@ -490,6 +490,8 @@ export const MODES = [
     body: 'An original shōnen story at your level.' },
   { id: 'library', title: 'Library', jp: '図書室', group: 'Understand', icon: '📕', mic: false,
     body: 'Short stories to read a lot. Tap any word to look it up.' },
+  { id: 'manga', title: 'Manga Reader', jp: '漫画', group: 'Understand', icon: '🗯', mic: false,
+    body: 'Read manga pages you add, with every word one tap away.' },
   { id: 'particle', title: 'Particle Train', jp: '助詞列車', group: 'Understand', icon: '🚃', mic: false,
     body: 'Couple word cars with the right particle.' },
   { id: 'forge', title: 'Kanji Forge', jp: '漢字鍛冶', group: 'Understand', icon: '🔨', mic: false,
