@@ -21,6 +21,7 @@ export function mount(el, ctx) {
   let practice = false;   // all forged: re-forge old ones for practice
   let done = 0;
   let firstTry = true;
+  let misses = 0;          // strikes that missed on this kanji: after two, its parts are shown
   let newForged = [];      // kanji forged for the first time this visit (recapped after each round of GOAL)
   let recapOff = null;
 
@@ -30,6 +31,7 @@ export function mount(el, ctx) {
     message = null;
     anvil = [];
     firstTry = true;
+    misses = 0;
     const have = store.forgedKanji;
     const remaining = KANJI.filter((k) => !have.has(k.kanji));
     practice = remaining.length === 0 && (practice || !!ctx.today);
@@ -71,7 +73,7 @@ export function mount(el, ctx) {
           ${message ? `<p class="miss-c">${esc(message)}</p>` : ''}
           ${forged
             ? '<button class="btn primary wide" data-act="next">🔨 Next kanji</button>'
-            : `<div class="part-grid">${tray.map((p, i) => tile(p, false, 'add', i)).join('')}</div>
+            : `<div class="part-grid">${tray.map((p, i) => tile(p, misses >= 2 && t.parts.includes(p), 'add', i)).join('')}</div>
                <button class="btn primary wide" data-act="strike" ${anvil.length ? '' : 'disabled'}>🔨 Strike the anvil</button>`}
         ` : `<p>You've forged every kanji in this set. More are coming.</p>
              <button class="btn wide" data-act="practice">Practice re-forging</button>`}
@@ -104,7 +106,11 @@ export function mount(el, ctx) {
       if (firstTry) store.log(false);
       store.grade({ skill: 'kanji', id: t.kanji, ok: false, firstTry });
       firstTry = false;
-      message = `Not quite. This kanji needs ${t.parts.length} parts.`;
+      misses += 1;
+      // A second miss shows the answer instead of leaving it to guesswork.
+      message = misses >= 2
+        ? `It's ${t.parts.map((p) => `${p} (${PART_NAMES[p] || p})`).join(' + ')}. Place ${t.parts.length === 1 ? 'it' : 'them'} on the anvil and strike.`
+        : `Not quite. This kanji needs ${t.parts.length} parts.`;
       anvil = [];
     }
     render();

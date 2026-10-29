@@ -15,7 +15,7 @@ export function mount(el, ctx) {
   let customer = CUSTOMERS.worker;
   let item = SHOP_STOCK[0];
   let keigo = null;       // N4: { m (the moment), opts (shuffled) }
-  let lines = null;       // N4 greetings or thanks on screen, shuffled
+  let lines = null;       // greetings or thanks on screen, shuffled (N4 and N3 lines, N5 indexes)
   // N4 and N3 customers both get the polite shop: greetings, keigo moments and thanks (N3 ones more formal).
   const n4 = () => levelOf(customer) !== 'N5';
   const GREETS = () => (levelOf(customer) === 'N3' ? SHOP_GREETINGS_N3 : SHOP_GREETINGS_N4);
@@ -72,7 +72,7 @@ export function mount(el, ctx) {
           ${lines.map((g) => `<button class="btn left" data-act="greet4" data-i="${GREETS().indexOf(g)}" lang="ja">${esc(g.jp)}</button>`).join('')}`;
       }
       return `<p class="small strong dim">A customer walks in. What do you say?</p>
-        ${SHOP_GREETINGS.map((g, i) => `<button class="btn left" data-act="greet" data-i="${i}" lang="ja">${esc(g)}</button>`).join('')}`;
+        ${lines.map((i) => `<button class="btn left" data-act="greet" data-i="${i}" lang="ja">${esc(SHOP_GREETINGS[i])}</button>`).join('')}`;
     }
     if (step === 'keigo') {
       const m = keigo.m;
@@ -99,7 +99,7 @@ export function mount(el, ctx) {
     }
     if (step === 'reply') {
       return `<p class="small strong dim">They're leaving. What does a shopkeeper say?</p>
-        ${SHOP_THANKS.map((t, i) => `<button class="btn left" data-act="reply" data-i="${i}" lang="ja">${esc(t)}</button>`).join('')}`;
+        ${lines.map((i) => `<button class="btn left" data-act="reply" data-i="${i}" lang="ja">${esc(SHOP_THANKS[i])}</button>`).join('')}`;
     }
     const c = COUNTERS[item.counter];
     return `<div class="panel stack-sm">
@@ -145,7 +145,7 @@ export function mount(el, ctx) {
         keigo = { m, opts: shuffle(m.options) };
         step = 'keigo';
         setTimeout(() => speaker.speak(m.line.jp, { mps: 4, voice: m.who }), 900);
-      } else lines = shuffle(THANKS());
+      } else lines = n4() ? shuffle(THANKS()) : shuffle(SHOP_THANKS.map((_, i) => i));
     } else {
       store.log(false);
       store.grade({ skill: 'counters', id: `${item.counter}:${count}`, ok: false, firstTry: !mistakes });
@@ -241,7 +241,8 @@ export function mount(el, ctx) {
     customer = CUSTOMERS[pickMixed(content('customers')).key];
     item = pickMixed(stockFor(customer));
     keigo = null;
-    lines = n4() ? shuffle(GREETS()) : null;
+    // The choices on screen, shuffled: N4 and N3 lines, or N5 indexes (the right one is first in the data).
+    lines = n4() ? shuffle(GREETS()) : shuffle(SHOP_GREETINGS.map((_, i) => i));
     count = 1 + Math.floor(Math.random() * 5);
     basket = [];
     feedback = null;

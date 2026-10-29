@@ -48,7 +48,6 @@ export function attackPool(now = Date.now()) {
   // Garden words (not mined lines: they're whole sentences without built-in clips).
   const words = store.planted().filter(({ item, prog }) => prog.r > 0 && !item.mined && item.en && item.reading);
   const meanings = words.map(({ item }) => item.en);
-  const japanese = words.map(({ item }) => item.jp);
   // Each word always asks the same way round (fixed by its id), half one way and half the other.
   const flip = (id) => [...id].reduce((n, ch) => n + ch.codePointAt(0), 0) % 2 === 1;
   words.forEach(({ item, prog }) => {
@@ -65,7 +64,7 @@ export function attackPool(now = Date.now()) {
         answer: item.en, pool: meanings, optionsJa: false, say, sayable: say, targets: [item.jp, item.reading, say], detail: `${item.jp} (${item.reading}) = ${item.en}`, due, easy, grade });
     } else {
       out.push({ key: 'w:' + item.id, level: levelOf(item), kind: 'word', skill: 'vocab', ask: 'Say it or pick it in Japanese:', prompt: item.en, promptJa: false,
-        answer: item.jp, pool: japanese, optionsJa: true, say, sayable: say, targets: [item.jp, item.reading, say], detail: `${item.en} = ${item.jp} (${item.reading})`, due, easy, grade });
+        answer: item.jp, pool: words.filter((w) => w.item.en !== item.en).map((w) => w.item.jp), optionsJa: true, say, sayable: say, targets: [item.jp, item.reading, say], detail: `${item.en} = ${item.jp} (${item.reading})`, due, easy, grade });
     }
   });
 
