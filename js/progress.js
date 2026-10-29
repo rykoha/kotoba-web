@@ -15,6 +15,8 @@ import { SCORING, scoreSections } from './exam-data.js';
 import { N3_WORDS } from './data.js';
 import { READERS } from './library-data.js';
 import { wordsRead } from './modes/library.js';
+import { candoSection, markCandoSeen } from './cando.js';
+import { capsuleSection, fillCapsuleSection } from './capsule.js';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MON = MONTHS.map((m) => m.slice(0, 3));
@@ -185,6 +187,10 @@ export function render(view) {
 
     ${roadSection(road, d)}
 
+    ${candoSection()}
+
+    ${capsuleSection()}
+
     <div class="progress-pair">
     <section class="panel stack-sm" aria-labelledby="garden-h">
       <h2 class="section-title" id="garden-h">Garden</h2>
@@ -198,6 +204,7 @@ export function render(view) {
       <h2 class="section-title" id="cal-h">${MONTHS[now.getMonth()]}</h2>
       <div class="cal">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((x) => `<span class="cal-h" aria-hidden="true">${x}</span>`).join('')}${cells.join('')}</div>
       <p class="small dim">${daysLine(store.daysStudiedThisMonth())} No streaks: come back whenever.</p>
+      ${store.letters.length ? '<a class="linkbtn" href="#/letter">Letters from Ren ›</a>' : ''}
     </section>
     </div>
     <a class="btn wide" href="#/settings">Move progress to another device (Settings)</a>
@@ -205,6 +212,7 @@ export function render(view) {
   // The skill chart at the top (js/skill-chart.js), with its own clicks.
   if (offChart) offChart();
   offChart = mountSkillChart(view.querySelector('#skill-chart'));
+  fillCapsuleSection(view);
   if (offRoad) offRoad();
   offRoad = delegate(view, {
     'real-ask': (b) => { const box = view.querySelector('.real-pass'); if (box) box.innerHTML = realConfirm(b.dataset.level); box?.querySelector('button')?.focus(); },
@@ -212,7 +220,8 @@ export function render(view) {
     'real-no': () => render(view),
     'real-undo': (b) => { store.markRealPass(b.dataset.level, false); render(view); },
   });
-  return () => { if (offRoad) offRoad(); offRoad = null; if (offChart) offChart(); offChart = null; };
+  // Skills lit now are "seen" once Progress is left, so each one is marked new only once.
+  return () => { if (offRoad) offRoad(); offRoad = null; if (offChart) offChart(); offChart = null; markCandoSeen(); };
 }
 let offRoad = null;
 let offChart = null;

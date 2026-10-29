@@ -34,7 +34,7 @@ export const HELP_CLEAR = 2;
 export const SKILLS = ['kana', 'kanji', 'vocab', 'grammar', 'listening', 'pitch', 'speaking', 'counters'];
 
 /** Version of the saved progress shape. Bump it and add a step to MIGRATIONS whenever the shape changes. */
-export const STATE_VERSION = 14;
+export const STATE_VERSION = 15;
 
 function blank() {
   return {
@@ -87,12 +87,39 @@ const LEVEL_RE = /^N[1-5]$/;
  * or null before it's answered) }. At most one arrives a day; nothing in it ever expires.
  */
 export function blankMessages() {
-  return { thread: [] };
+  return { thread: [], letters: [] };
+}
+
+/**
+ * Ren's monthly letters (js/letters.js), oldest first: { month ('YYYY-MM'), reg ('polite'|'casual'), lines (line ids,
+ * js/letter-data.js), words (Garden ids to recall), stats: { days, words, mocks }, snap: { hira, kata, chapters, units }
+ * (what the learner had, for the next letter), read, at (ms written) }. One per month at most.
+ */
+export const LETTERS_MAX = 60;
+const LINE_ID_RE = /^[a-zA-Z]{1,20}$/;
+function normalizeLetters(raw) {
+  if (!Array.isArray(raw)) return [];
+  const by = new Map();
+  for (const l of raw) {
+    if (!l || typeof l !== 'object' || typeof l.month !== 'string' || !/^\d{4}-\d{2}$/.test(l.month)) continue;
+    const st = l.stats && typeof l.stats === 'object' ? l.stats : {};
+    const sn = l.snap && typeof l.snap === 'object' ? l.snap : {};
+    by.set(l.month, {
+      month: l.month, reg: l.reg === 'polite' ? 'polite' : 'casual',
+      lines: Array.isArray(l.lines) ? l.lines.filter((x) => typeof x === 'string' && LINE_ID_RE.test(x)).slice(0, 20) : [],
+      words: Array.isArray(l.words) ? l.words.filter((x) => typeof x === 'string' && x.length < 80).slice(0, 5) : [],
+      stats: { days: Math.max(0, Math.round(num(st.days))), words: Math.max(0, Math.round(num(st.words))), mocks: Math.max(0, Math.round(num(st.mocks))) },
+      snap: { hira: !!sn.hira, kata: !!sn.kata, chapters: Math.max(0, Math.round(num(sn.chapters))), units: Math.max(0, Math.round(num(sn.units))) },
+      read: !!l.read, at: Math.max(0, num(l.at)),
+    });
+  }
+  return [...by.values()].sort((a, b) => (a.month < b.month ? -1 : 1)).slice(-LETTERS_MAX);
 }
 export const MESSAGES_MAX = 500;
 
 function normalizeMessages(raw) {
   const m = blankMessages();
+  if (raw && typeof raw === 'object') m.letters = normalizeLetters(raw.letters);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.thread)) return m;
   const seen = new Set();
   for (const e of raw.thread) {
@@ -121,7 +148,14 @@ function mergeMessages(a, b) {
     const score = (x) => (x.reply != null ? 2 : 0) + (x.ok != null ? 1 : 0);
     if (!cur || score(e) > score(cur) || (score(e) === score(cur) && e.at < cur.at)) by.set(key, { ...e });
   }
-  return normalizeMessages({ thread: [...by.values()] });
+  // Letters: one per month from either device (the first one written wins), read on either device counts as read.
+  const letters = new Map();
+  for (const l of [...a.letters, ...b.letters]) {
+    const cur = letters.get(l.month);
+    if (!cur) letters.set(l.month, { ...l });
+    else letters.set(l.month, { ...(l.at < cur.at ? l : cur), read: cur.read || l.read });
+  }
+  return normalizeMessages({ thread: [...by.values()], letters: [...letters.values()] });
 }
 
 /**
@@ -285,6 +319,8 @@ const MIGRATIONS = {
   11: (raw) => ({ ...raw, settings: { showAllLevels: false, ...(raw.settings || {}) } }),
   // v12 -> v13: the Library. No readers read yet; everything else passes through untouched.
   12: (raw) => ({ ...raw, library: raw.library && typeof raw.library === 'object' ? raw.library : blankLibrary() }),
+  // v14 -> v15: Ren's monthly letters (messages.letters). None yet; everything else passes through untouched.
+  14: (raw) => ({ ...raw, messages: { thread: [], ...(raw.messages && typeof raw.messages === 'object' ? raw.messages : {}), letters: [] } }),
   // v13 -> v14: the test date planner (exam.goal, see normalizeGoal). No goal yet; everything else passes through
   // untouched. The version moves so an older copy of the app, which would drop the goal, leaves synced v14 alone.
   13: (raw) => ({ ...raw, exam: { ...(raw.exam && typeof raw.exam === 'object' ? raw.exam : blankExam()), goal: null } }),
@@ -1369,6 +1405,18 @@ class Store {
 
   // ----- Ren's Messages (js/messages.js) -----
   get messages() { return this.s.messages.thread; }
+
+  // ----- Ren's monthly letters (js/letters.js) -----
+  get letters() { return this.s.messages.letters; }
+  addLetter(letter) {
+    if (this.s.messages.letters.some((l) => l.month === letter.month)) return;
+    this.s.messages.letters = normalizeLetters([...this.s.messages.letters, letter]);
+    this.save();
+  }
+  markLetterRead(month) {
+    const l = this.s.messages.letters.find((x) => x.month === month);
+    if (l && !l.read) { l.read = true; this.save(); }
+  }
 
   // ----- library -----
   /** A Library reader's record ({ n, at, q, qt }), or null if it hasn't been read to the end. */

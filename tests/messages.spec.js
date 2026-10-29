@@ -307,11 +307,11 @@ test.describe('saved progress v10 → v11', () => {
     await seed(page, FIXTURE_V10);
     await page.goto('./#/settings');
     const s = await saved(page);
-    expect(s.v).toBe(14);
+    expect(s.v).toBe(15);
     expect(s.items).toEqual(FIXTURE_V10.items);
     expect(s.settings).toEqual({ ...FIXTURE_V10.settings, showAllLevels: false });
     for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'grammar', 'days', 'coach', 'exam', 'storyReplays']) expect(s[k], k).toEqual(k === 'exam' ? { ...FIXTURE_V10[k], goal: null } : FIXTURE_V10[k]);   // v14 adds the test date goal
-    expect(s.messages).toEqual({ thread: [] });
+    expect(s.messages).toEqual({ thread: [], letters: [] });
   });
 
   test('a bad thread entry is dropped, good ones kept in order', async ({ page }) => {
