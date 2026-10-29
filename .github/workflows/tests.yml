@@ -27,7 +27,8 @@ jobs:
 
   playwright:
     name: Playwright (phone 390x844, desktop 1280x800)
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04, which the pinned Playwright cannot install browsers for.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
