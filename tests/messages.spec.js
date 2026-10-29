@@ -310,7 +310,7 @@ test.describe('saved progress v10 → v11', () => {
     expect(s.v).toBe(14);
     expect(s.items).toEqual(FIXTURE_V10.items);
     expect(s.settings).toEqual({ ...FIXTURE_V10.settings, showAllLevels: false });
-    for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'grammar', 'days', 'coach', 'exam', 'storyReplays']) expect(s[k], k).toEqual(FIXTURE_V10[k]);
+    for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'grammar', 'days', 'coach', 'exam', 'storyReplays']) expect(s[k], k).toEqual(k === 'exam' ? { ...FIXTURE_V10[k], goal: null } : FIXTURE_V10[k]);   // v14 adds the test date goal
     expect(s.messages).toEqual({ thread: [] });
   });
 
