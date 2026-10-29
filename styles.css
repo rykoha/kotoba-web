@@ -1538,3 +1538,10 @@ body.has-tabs .lk-sheet { bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-
 .dict-mora { padding: 0 1px; border-radius: 4px; }
 .dict-mora.off { background: var(--miss-soft); color: var(--miss); text-decoration: underline wavy; text-underline-offset: 4px; font-weight: 800; }
 .dict-morae.key .dict-mora.off { background: var(--accent-soft); color: var(--accent); }
+
+/* Test date planner (js/planner.js) */
+.plan-card { border-left: 4px solid var(--accent); }
+.plan-card .section-title { font-size: var(--fs-lg); display: flex; align-items: center; gap: var(--sp-2); }
+.plan-screen .chips .chip-toggle { font-family: inherit; }
+.plan-date { display: block; margin-top: var(--sp-1); min-height: 44px; padding: var(--sp-1) var(--sp-2); border: 1.5px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font: inherit; max-width: 100%; }
+.plan-checks { list-style: none; padding-left: 0; }

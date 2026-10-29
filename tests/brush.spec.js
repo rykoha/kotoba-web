@@ -515,7 +515,7 @@ test.describe('saved progress v9 → v10', () => {
     await seed(page, FIXTURE_V9);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(13);
+    expect(s.v).toBe(14);
     expect(s.items).toEqual(FIXTURE_V9.items);
     expect(s.settings).toEqual({ ...FIXTURE_V9.settings, showAllLevels: false });
     expect(s.coach).toEqual(FIXTURE_V9.coach);

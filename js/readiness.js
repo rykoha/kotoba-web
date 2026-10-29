@@ -93,13 +93,13 @@ export function n5Areas(now = new Date()) {
   const readVal = 0.5 * (kanaN / kana.length) + 0.5 * clamp(chN / N5_TARGETS.chapters);
 
   return [
-    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), text: `${vocabN}/${vocabT}`,
+    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), n: vocabN, t: vocabT, text: `${vocabN}/${vocabT}`,
       title: `Vocabulary: ${vocabN} of the ${vocabT} N5 words to aim for (${pct(N5_TARGETS.vocab)} of the deck)`,
       tip: 'Water the Garden: new N5 words come in every day.', href: '#/garden', go: 'Garden' },
-    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), text: `${kanjiN}/${kanjiT}`,
+    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), n: kanjiN, t: kanjiT, text: `${kanjiN}/${kanjiT}`,
       title: `Kanji: ${kanjiN} of ${kanjiT} learned in the Reading Dojo or forged`,
       tip: 'Learn kanji in the Reading Dojo, then forge them in Kanji Forge.', href: '#/play/dojo', go: 'Reading Dojo' },
-    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), text: `${gramN}/${gramT}`,
+    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), n: gramN, t: gramT, text: `${gramN}/${gramT}`,
       title: `Grammar: ${gramN} of ${gramT} N5 grammar points remembered for a week or more`,
       tip: 'Read the course lessons; their grammar cards come back in the Garden.', href: '#/course', go: 'Course' },
     { id: 'listening', label: 'Listening', value: lisVal, text: lis.tot ? `${pct(lis.rate)} (${lis.tot})` : '–',
@@ -140,13 +140,13 @@ export function n4Areas(now = new Date()) {
   const readVal = 0.6 * clamp(chN / T.chapters) + 0.4 * clamp(lessons / N4_KANJI_LESSONS.length);
 
   return [
-    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), text: `${vocabN}/${vocabT}`,
+    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), n: vocabN, t: vocabT, text: `${vocabN}/${vocabT}`,
       title: `Vocabulary: ${vocabN} of the ${vocabT} N4 words to aim for (${pct(T.vocab)} of the N4 deck)`,
       tip: 'Water the Garden: N4 words come in after the N5 deck.', href: '#/garden', go: 'Garden' },
-    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), text: `${kanjiN}/${kanjiT}`,
+    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), n: kanjiN, t: kanjiT, text: `${kanjiN}/${kanjiT}`,
       title: `Kanji: ${kanjiN} of ${kanjiT} N4 kanji learned in the Reading Dojo or forged`,
       tip: 'Learn the N4 kanji in the Reading Dojo, then forge them in Kanji Forge.', href: '#/play/dojo', go: 'Reading Dojo' },
-    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), text: `${gramN}/${gramT}`,
+    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), n: gramN, t: gramT, text: `${gramN}/${gramT}`,
       title: `Grammar: ${gramN} of ${gramT} N4 grammar points remembered for a week or more`,
       tip: 'Work through the N4 bridge units in the course; their grammar cards come back in the Garden.', href: '#/course', go: 'Course' },
     { id: 'listening', label: 'Listening', value: lisVal, text: lis.tot ? `${pct(lis.rate)} (${lis.tot})` : '–',
@@ -187,13 +187,13 @@ export function n3Areas(now = new Date()) {
   const readVal = 0.6 * clamp(chN / T.chapters) + 0.4 * clamp(lessons / N3_KANJI_LESSONS.length);
 
   return [
-    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), text: `${vocabN}/${vocabT}`,
+    { id: 'vocab', label: 'Vocabulary', value: clamp(vocabN / vocabT), n: vocabN, t: vocabT, text: `${vocabN}/${vocabT}`,
       title: `Vocabulary: ${vocabN} of the ${vocabT} N3 words to aim for (${pct(T.vocab)} of the N3 deck)`,
       tip: 'Water the Garden: N3 words come in after the N4 deck.', href: '#/garden', go: 'Garden' },
-    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), text: `${kanjiN}/${kanjiT}`,
+    { id: 'kanji', label: 'Kanji', value: clamp(kanjiN / kanjiT), n: kanjiN, t: kanjiT, text: `${kanjiN}/${kanjiT}`,
       title: `Kanji: ${kanjiN} of ${kanjiT} N3 kanji learned in the Reading Dojo or forged`,
       tip: 'Learn the N3 kanji in the Reading Dojo, then forge them in Kanji Forge.', href: '#/play/dojo', go: 'Reading Dojo' },
-    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), text: `${gramN}/${gramT}`,
+    { id: 'grammar', label: 'Grammar', value: clamp(gramN / gramT), n: gramN, t: gramT, text: `${gramN}/${gramT}`,
       title: `Grammar: ${gramN} of ${gramT} N3 grammar points remembered for a week or more`,
       tip: 'Work through the Phase 3 units in the course; their grammar cards come back in the Garden.', href: '#/course', go: 'Course' },
     { id: 'listening', label: 'Listening', value: lisVal, text: lis.tot ? `${pct(lis.rate)} (${lis.tot})` : '–',
@@ -267,5 +267,6 @@ export function readinessCard(now = new Date()) {
     ${body}
     ${last ? `<p class="tiny dim">Last: ${esc(mockLine(last))}.</p>` : ''}
     <a class="linkbtn" href="#/progress">See the details ›</a>
+    ${store.goal ? '' : '<a class="linkbtn" href="#/plan">Taking the real test? Plan for a date ›</a>'}
   </section>`;
 }

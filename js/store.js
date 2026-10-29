@@ -34,7 +34,7 @@ export const HELP_CLEAR = 2;
 export const SKILLS = ['kana', 'kanji', 'vocab', 'grammar', 'listening', 'pitch', 'speaking', 'counters'];
 
 /** Version of the saved progress shape. Bump it and add a step to MIGRATIONS whenever the shape changes. */
-export const STATE_VERSION = 13;
+export const STATE_VERSION = 14;
 
 function blank() {
   return {
@@ -159,7 +159,25 @@ function mergeLibrary(a, b) {
 }
 
 export function blankExam() {
-  return { history: [], real: {}, seen: [], later: {} };
+  return { history: [], real: {}, seen: [], later: {}, goal: null };
+}
+
+/**
+ * The test date goal (js/planner.js): { level, date ('YYYY-MM-DD' test day), days (study days a week, 3-7), from
+ * ('YYYY-MM-DD' the plan was made, which fixes its checkpoints), at (ms, set or removed) }. Removing it keeps the
+ * entry with level and date null, so a removal syncs like any change. Null when no goal was ever set.
+ */
+function normalizeGoal(g) {
+  if (!g || typeof g !== 'object' || !(Number(g.at) > 0)) return null;
+  const day = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
+  const on = LEVEL_RE.test(g.level) && day(g.date);
+  const days = Math.round(Number(g.days));
+  return {
+    level: on ? g.level : null, date: on ? g.date : null,
+    days: days >= 3 && days <= 7 ? days : 5,
+    from: day(g.from) ? g.from : dateKey(new Date(Number(g.at))),
+    at: Number(g.at),
+  };
 }
 
 /**
@@ -267,6 +285,9 @@ const MIGRATIONS = {
   11: (raw) => ({ ...raw, settings: { showAllLevels: false, ...(raw.settings || {}) } }),
   // v12 -> v13: the Library. No readers read yet; everything else passes through untouched.
   12: (raw) => ({ ...raw, library: raw.library && typeof raw.library === 'object' ? raw.library : blankLibrary() }),
+  // v13 -> v14: the test date planner (exam.goal, see normalizeGoal). No goal yet; everything else passes through
+  // untouched. The version moves so an older copy of the app, which would drop the goal, leaves synced v14 alone.
+  13: (raw) => ({ ...raw, exam: { ...(raw.exam && typeof raw.exam === 'object' ? raw.exam : blankExam()), goal: null } }),
 };
 
 /** Adds the guided-course field with defaults. Self-contained: it touches nothing else in the blob. */
@@ -395,6 +416,7 @@ function normalizeExam(raw) {
   if (raw.later && typeof raw.later === 'object') {
     for (const [lv, d] of Object.entries(raw.later)) if (LEVEL_RE.test(lv) && /^\d{4}-\d{2}-\d{2}$/.test(d)) e.later[lv] = d;
   }
+  e.goal = normalizeGoal(raw.goal);
   return e;
 }
 
@@ -670,6 +692,8 @@ export function mergeProgress(local, remote, now = Date.now()) {
     history: [...hist.values()].sort((x, y) => x.at - y.at).slice(-EXAM_HISTORY_MAX).map((h) => ({ ...h, parts: { ...h.parts } })),
     real, later,
     seen: union(a.exam.seen, b.exam.seen).slice(-EXAM_SEEN_MAX),
+    // The test date goal: the one set (or removed) most recently, on either device.
+    goal: [a.exam.goal, b.exam.goal].filter(Boolean).sort((x, y) => y.at - x.at).map((g) => ({ ...g }))[0] || null,
   };
 
   out.settings = { ...a.settings };   // per device: theme, voice range, "Show every level" (v12)…
@@ -1405,6 +1429,22 @@ class Store {
   markRealPass(level, on, now = Date.now()) {
     if (!LEVEL_RE.test(level)) return;
     this.s.exam.real[level] = { on: !!on, at: now };
+    this.save();
+  }
+
+  /** The test date goal (js/planner.js), or null when none is set. */
+  get goal() { const g = this.s.exam.goal; return g && g.level ? g : null; }
+
+  /** Sets the test date goal: a level, the test day ('YYYY-MM-DD') and study days a week. Its checkpoints start today. */
+  setGoal({ level, date, days }, now = new Date()) {
+    this.s.exam.goal = normalizeGoal({ level, date, days, from: dateKey(now), at: now.getTime() });
+    this.save();
+  }
+
+  /** Removes the test date goal (kept as a removal, so it syncs). */
+  clearGoal(now = Date.now()) {
+    const g = this.s.exam.goal;
+    this.s.exam.goal = { level: null, date: null, days: g ? g.days : 5, from: dateKey(new Date(now)), at: now };
     this.save();
   }
 

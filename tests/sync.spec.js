@@ -147,6 +147,22 @@ test.describe('mergeProgress (pure merge in store.js)', () => {
     expect((await merge(page, phone, { v: 11, items: {} })).settings.showAllLevels).toBe(true);
   });
 
+  test('the test date goal set or removed most recently wins, on either device (v14)', async ({ page }) => {
+    const ex = (goal) => ({ history: [], real: {}, seen: [], later: {}, goal });
+    const n5 = { level: 'N5', date: '2027-07-04', days: 5, from: '2026-10-08', at: T0 };
+    const n4 = { level: 'N4', date: '2027-12-05', days: 6, from: '2026-10-09', at: T0 + H };
+    const off = { level: null, date: null, days: 5, from: '2026-10-09', at: T0 + 2 * H };
+    const phone = { v: 14, items: {}, exam: ex(n5) };
+    const pc = { v: 14, items: {}, exam: ex(n4) };
+    expect((await merge(page, phone, pc)).exam.goal).toEqual(n4);
+    expect((await merge(page, pc, phone)).exam.goal).toEqual(n4);
+    // A removal is newer, so it syncs too.
+    expect((await merge(page, pc, { v: 14, items: {}, exam: ex(off) })).exam.goal).toEqual(off);
+    // An older copy (v13, before goals) keeps this device's goal, and a fresh migration has none.
+    expect((await merge(page, phone, { v: 13, items: {} })).exam.goal).toEqual(n5);
+    expect((await merge(page, { v: 13, items: {} }, { v: 13, items: {} })).exam.goal).toBe(null);
+  });
+
   test('the saved voice range stays per device; "ears first" words done on either device are kept', async ({ page }) => {
     const phoneVoice = { mid: 210, lo: -3, hi: 4, n: 5 };
     const pcVoice = { mid: 120, lo: -2.5, hi: 3, n: 2 };

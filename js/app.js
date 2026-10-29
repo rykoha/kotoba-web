@@ -33,6 +33,7 @@ import * as soundcheck from './soundcheck.js';
 import * as placement from './placement.js';
 import * as exam from './exam.js';
 import { readinessCard } from './readiness.js';
+import * as planner from './planner.js';
 import { skillMini } from './skill-chart.js';
 import * as progress from './progress.js';
 import { checkinCard, checkinHandlers } from './checkin.js';
@@ -232,6 +233,11 @@ function routeView(a, b, c) {
   if (a === 'exam') {
     setTitle('Mock JLPT', true);
     cleanup = exam.mount(view, { done: goHome, quiet: store.settings.quiet });
+    return;
+  }
+  if (a === 'plan') {
+    setTitle('Test plan', true);
+    cleanup = planner.mount(view);
     return;
   }
   if (a === 'check') {
@@ -453,6 +459,7 @@ function renderHome() {
 
       <aside class="stack home-side" aria-label="At a glance">
         ${course.courseCard()}
+        ${planner.planCard()}
         ${readinessCard()}
         ${skillMini()}
         ${libraryCard()}
