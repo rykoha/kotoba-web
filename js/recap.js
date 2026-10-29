@@ -7,6 +7,7 @@
 // always skippable and never blocks moving on. Only existing lines are spoken, so every one has its VOICEVOX clip.
 import { store } from './store.js';
 import { speaker } from './audio.js';
+import { GARDEN_CATALOG } from './data.js';
 import { recentRate } from './skills.js';
 import { esc, shuffle, delegate } from './ui.js';
 import * as fx from './fx.js';
@@ -260,11 +261,27 @@ export function listenQuestion({ jp, en, voice = 0, say = null, pool, skill = 'l
   };
 }
 
+let synonyms = null;
+/** Japanese words that share an English meaning (だれ and 誰 are both "who"): none may be a wrong option for another. */
+export function sameMeaning(en) {
+  if (!synonyms) {
+    synonyms = new Map();
+    for (const w of Object.values(GARDEN_CATALOG)) {
+      if (!w || !w.en) continue;
+      const k = String(w.en).trim().toLowerCase();
+      if (!synonyms.has(k)) synonyms.set(k, new Set());
+      synonyms.get(k).add(w.jp);
+    }
+  }
+  return synonyms.get(String(en).trim().toLowerCase()) || new Set();
+}
+
 /** See the meaning, pick the Japanese (reading help off on the options when `noruby`). */
 export function meaningQuestion({ jp, en, voice = 0, say = null, pool, skill = 'vocab', gradeId = null, garden = [], noruby = false, why = null }) {
+  const same = sameMeaning(en);
   return {
     type: 'choice', ask: `Which one means "${en}"?`, show: null,
-    options: withDistractors(jp, pool, optionCount(skill)), optsJa: true, optsNoruby: noruby,
+    options: withDistractors(jp, pool.filter((x) => !same.has(x)), optionCount(skill)), optsJa: true, optsNoruby: noruby,
     after: { text: say || jp, voice }, why: why || `${jp} means "${en}".`, skill, gradeId, garden,
   };
 }
