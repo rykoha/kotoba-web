@@ -252,6 +252,7 @@ function roadSection(road, d) {
       ${sc && recent.length ? `<h3 class="small strong">Mock results</h3><ul class="small mock-list">${recent.map((h) => `<li>${esc(mockLine(h))}</li>`).join('')}</ul>
         <p class="tiny dim">The pass line for ${road.level} is ${sc.pass}/${sc.total}, with at least ${scoreSections(road.level).map((x) => `${x.min} in ${x.short}`).join(', ')}. Only a full mock counts toward finishing a level.</p>` : ''}
       ${doneLines ? `<ul class="small">${doneLines}</ul>` : ''}
+      <a class="linkbtn" href="#/plan">${store.goal ? `Your ${store.goal.level} test plan ›` : 'Plan for a real test date ›'}</a>
       ${levelsLine()}
     </section>`;
 }

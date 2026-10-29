@@ -5,6 +5,7 @@ import { TRACKS } from './dojo-data.js';
 import { BRUSH_KANA } from './brush-data.js';
 import { coursePlan, storyBlock } from './course.js';
 import { attackPool, unlockedRivals, MIN_ITEMS } from './rival-items.js';
+import { planFocus } from './planner.js';
 
 /**
  * Skill block by weekday, in two alternating weeks (A, B) so every mode gets regular time and no skill area starves:
@@ -125,7 +126,10 @@ export function todayPlan(date = new Date()) {
     if (beginner) {
       // no skill block
     } else if (skill === 'free') {
-      blocks.push({ id: 'skill', mode: null, mins: 5, title: 'Skill focus · Free choice', desc: 'Saturday: play any mode you like.', ctx: {} });
+      // With a test plan, Saturday's free choice suggests the readiness area furthest from its target.
+      const focus = planFocus(date);
+      blocks.push({ id: 'skill', mode: null, mins: 5, title: 'Skill focus · Free choice',
+        desc: `Saturday: play any mode you like.${focus ? ` For your ${focus.level} plan, ${focus.area.go} helps most (${focus.area.label.toLowerCase()} is furthest from its target).` : ''}`, ctx: {} });
     } else if (skill && course && course.skill(skill)) {
       const cs = course.skill(skill);
       blocks.push({ id: 'skill', mode: cs.mode, mins: 5, title: `Skill focus · ${MODE_BY_ID[cs.mode].title}`, desc: `${WEEKDAY[weekday]}: ${cs.desc}`, ctx: cs.ctx, unit: cs.unit });
