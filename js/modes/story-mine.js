@@ -6,6 +6,7 @@ import { speaker } from '../audio.js';
 import { gardenStage } from '../data.js';
 import { segmentParts } from '../furigana.js';
 import { toHiragana, KANJI_RE } from '../romaji.js';
+import { romajiToKana } from '../kana-input.js';
 import { esc, delegate, toast } from '../ui.js';
 import * as fx from '../fx.js';
 
@@ -75,7 +76,7 @@ export function mountMine(el, { back }) {
     const unknown = parts.filter((p) => p[2] === 'kanji' && !p[1]).length;
     return `
       <div class="panel stack-sm mine-work">
-        <p class="small dim">${unknown ? `Type the reading in hiragana for the ${unknown === 1 ? 'kanji' : `${unknown} kanji groups`} marked よみ? (a Japanese keyboard helps).` : 'Readings filled in from the app\'s dictionary. Fix any that look wrong.'}</p>
+        <p class="small dim">${unknown ? `Type the reading for the ${unknown === 1 ? 'kanji' : `${unknown} kanji groups`} marked よみ?, in hiragana or romaji.` : 'Readings filled in from the app\'s dictionary. Fix any that look wrong.'}</p>
         <div class="mine-tokens">${tokens}</div>
         <label class="stack-sm"><span class="strong small">What it means (English)</span>
           <input id="mine-en" class="mine-input" maxlength="120" value="${esc(meaning)}" aria-label="Meaning in English" placeholder="e.g. I won't lose!"></label>
@@ -127,11 +128,13 @@ export function mountMine(el, { back }) {
     const saved = parts.map(([t, , kind]) => {
       if (kind !== 'kanji') return [t, null];
       k++;
-      const r = toHiragana((readings[k] || '').replace(/\s+/g, ''));
+      // Romaji works too, for a keyboard without Japanese input ("kokoro" becomes こころ).
+      const typed = (readings[k] || '').replace(/\s+/g, '');
+      const r = toHiragana(/[a-z]/i.test(typed) ? romajiToKana(typed) : typed);
       if (!KANA_ONLY.test(r)) missing.push(t);
       return [t, r];
     });
-    if (missing.length) { message = `Type the reading in hiragana for: ${missing.join('、')}`; render(); return; }
+    if (missing.length) { message = `Type the reading in hiragana or romaji for: ${missing.join('、')}`; render(); return; }
     meaning = meaning.trim();
     if (!meaning) { message = 'Add what the line means, so the Garden card can quiz you on it.'; render(); el.querySelector('#mine-en')?.focus(); return; }
     if (store.mined.some((m) => m.jp === line)) { message = 'That line is already in your Garden.'; render(); return; }

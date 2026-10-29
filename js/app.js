@@ -34,6 +34,10 @@ import * as soundcheck from './soundcheck.js';
 import * as placement from './placement.js';
 import * as exam from './exam.js';
 import { readinessCard } from './readiness.js';
+import * as planner from './planner.js';
+import * as letters from './letters.js';
+import * as cando from './cando.js';
+import * as capsule from './capsule.js';
 import { skillMini } from './skill-chart.js';
 import * as progress from './progress.js';
 import { checkinCard, checkinHandlers } from './checkin.js';
@@ -235,6 +239,26 @@ function routeView(a, b, c) {
     cleanup = exam.mount(view, { done: goHome, quiet: store.settings.quiet });
     return;
   }
+  if (a === 'plan') {
+    setTitle('Test plan', true);
+    cleanup = planner.mount(view);
+    return;
+  }
+  if (a === 'letter') {
+    setTitle('Letter from Ren', true);
+    cleanup = letters.mount(view, b || null);
+    return;
+  }
+  if (a === 'cando') {
+    setTitle('Things I can do', true);
+    cleanup = cando.mount(view);
+    return;
+  }
+  if (a === 'capsule') {
+    setTitle('Voice time capsule', true);
+    cleanup = capsule.mount(view);
+    return;
+  }
   if (a === 'check') {
     setTitle('Sound & mic check', true);
     cleanup = soundcheck.mount(view);
@@ -382,6 +406,7 @@ function libraryCard() {
 
 function renderHome() {
   messages.deliver();   // opening the app can bring one new message a day (js/messages.js)
+  letters.writeLetter();   // and the first visit of a month, Ren's letter about the month before (js/letters.js)
   const plan = todayPlan();
   const quiet = store.settings.quiet;
   const showHint = !isStandalone() && !store.settings.hideIosHint;
@@ -423,7 +448,7 @@ function renderHome() {
             : `<p class="lead strong good-c">✓ Today's plan is done. Come back whenever.</p>`}
         </section>
 
-        ${messages.inboxCard()}${checkinCard()}${placementHTML}
+        ${letters.letterCard()}${messages.inboxCard()}${checkinCard()}${placementHTML}
         <section class="panel today" aria-label="Today's plan">
           <div class="row-between wrap-gap">
             <h2 class="section-title">The plan</h2>
@@ -454,6 +479,7 @@ function renderHome() {
 
       <aside class="stack home-side" aria-label="At a glance">
         ${course.courseCard()}
+        ${planner.planCard()}
         ${readinessCard()}
         ${skillMini()}
         ${libraryCard()}

@@ -279,6 +279,7 @@ export function mount(el, ctx = {}) {
     const s = step();
     if (!s) return;
     const showJp = ['jp', 'jp2', 'gap'].includes(phase) || s.kind === 'intro';
+    // Without an English voice the English can only be read, so it shows even with "Show the words on screen" off.
     const prompt = phase === 'pause' ? 'Say it in Japanese…' : phase === 'en' ? 'Listen' : showJp ? 'Answer' : '';
     el.innerHTML = `
       <div class="stack practice walk walk-play">
@@ -287,7 +288,7 @@ export function mount(el, ctx = {}) {
         <div class="walk-bar bar" aria-hidden="true"><span style="width:${Math.min(100, elapsed / (prefs.mins * 600))}%"></span></div>
         <div class="panel center-text stack-sm walk-card ${phase}" aria-live="polite">
           <p class="section-label">${paused ? 'PAUSED' : esc(prompt.toUpperCase())}</p>
-          ${prefs.text ? `
+          ${prefs.text || !enVoice ? `
             <p class="walk-en lead strong">${esc(englishOf(s))}</p>
             <p class="walk-jp" lang="ja">${showJp ? esc(answerOf(s)) : '&nbsp;'}</p>
             <p class="small dim mono">${showJp ? esc(romaji(readingOf(s))) : '&nbsp;'}</p>`

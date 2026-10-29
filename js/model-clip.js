@@ -23,25 +23,33 @@ export function modelClip(target, voice = null) {
     if (!ctx) return null;
     const res = await fetch('audio/' + file);
     const buffer = await ctx.decodeAudioData(await res.arrayBuffer());
-    const data = buffer.getChannelData(0);
-    const sr = buffer.sampleRate;
-    const hop = Math.round(sr * 0.03);
-    const win = 2048;
-    const frames = [];
-    for (let i = 0; i + win <= data.length; i += hop) {
-      const w = data.subarray(i, i + win);
-      let sum = 0;
-      for (let k = 0; k < w.length; k++) sum += w[k] * w[k];
-      const level = Math.sqrt(sum / w.length);
-      frames.push({ time: i / sr, level, hz: level > 0.01 ? detectPitch(w, sr) : null });
-    }
-    const peak = Math.max(0, ...frames.map((f) => f.level));
-    const loud = frames.filter((f) => f.level >= peak * 0.12);
-    const span = loud.length ? { from: loud[0].time, to: loud[loud.length - 1].time + win / sr } : { from: 0, to: buffer.duration };
-    return { file, buffer, frames, span };
+    return { file, buffer, ...analyseBuffer(buffer) };
   })().catch(() => null);
   cache.set(file, job);
   return job;
+}
+
+/**
+ * Loudness and pitch every 30 ms of decoded audio, and where the speech is: { frames, span }. Also used for the
+ * learner's own recordings (js/capsule.js).
+ */
+export function analyseBuffer(buffer) {
+  const data = buffer.getChannelData(0);
+  const sr = buffer.sampleRate;
+  const hop = Math.round(sr * 0.03);
+  const win = 2048;
+  const frames = [];
+  for (let i = 0; i + win <= data.length; i += hop) {
+    const w = data.subarray(i, i + win);
+    let sum = 0;
+    for (let k = 0; k < w.length; k++) sum += w[k] * w[k];
+    const level = Math.sqrt(sum / w.length);
+    frames.push({ time: i / sr, level, hz: level > 0.01 ? detectPitch(w, sr) : null });
+  }
+  const peak = Math.max(0, ...frames.map((f) => f.level));
+  const loud = frames.filter((f) => f.level >= peak * 0.12);
+  const span = loud.length ? { from: loud[0].time, to: loud[loud.length - 1].time + win / sr } : { from: 0, to: buffer.duration };
+  return { frames, span };
 }
 
 /** Back-compat for the pronunciation check: just the frames. */

@@ -62,9 +62,10 @@ function wordQuestion(v, pool) {
   return { id: 'w:' + v.w, type: 'w2r', prompt: v.w, answer, opts: options(answer, others), item: v };
 }
 
-function kanjiQuestion(j, type, pool) {
+export function kanjiQuestion(j, type, pool) {
   if (type === 'j2m') return { id: j.id, type, prompt: j.k, answer: j.meaning, opts: options(j.meaning, pool.map((p) => p.meaning)), item: j };
-  if (type === 'm2j') return { id: j.id, type, prompt: j.meaning, answer: j.k, opts: options(j.k, pool.map((p) => p.k)), item: j };
+  // Kanji that share a meaning (都 and 京 are both "capital") are never each other's wrong option.
+  if (type === 'm2j') return { id: j.id, type, prompt: j.meaning, answer: j.k, opts: options(j.k, pool.filter((p) => p.meaning !== j.meaning).map((p) => p.k)), item: j };
   return { id: j.id, type: 'jw2r', prompt: j.word, answer: j.reading, opts: options(j.reading, pool.map((p) => p.reading)), item: j };
 }
 

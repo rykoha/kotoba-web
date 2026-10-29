@@ -164,7 +164,7 @@ test.describe('levels: the N4 gate', () => {
     await page.goto('./');
     await expect(page.locator('.today, .stack').first()).toBeVisible();
     const s = await saved(page);
-    expect(s.v).toBe(14);
+    expect(s.v).toBe(16);
     expect(s.items).toEqual(FIXTURE_V11.items);
     expect(s.chapters).toEqual(FIXTURE_V11.chapters);
     expect(s.messages.thread[0].id).toBe('r1');   // (opening the app may bring today's message after it)

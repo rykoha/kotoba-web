@@ -34,7 +34,7 @@ export const HELP_CLEAR = 2;
 export const SKILLS = ['kana', 'kanji', 'vocab', 'grammar', 'listening', 'pitch', 'speaking', 'counters'];
 
 /** Version of the saved progress shape. Bump it and add a step to MIGRATIONS whenever the shape changes. */
-export const STATE_VERSION = 14;
+export const STATE_VERSION = 16;
 
 function blank() {
   return {
@@ -65,7 +65,7 @@ function blank() {
     exam: blankExam(),  // added in v9: mock JLPT results and readiness (see blankExam)
     messages: blankMessages(),   // added in v11: Ren's Messages (see blankMessages and js/messages.js)
     library: blankLibrary(),     // added in v13: Library readers read (see blankLibrary and js/modes/library.js)
-    mywords: {},        // added in v14: My words, Garden cards for words met in the Manga Reader (see normalizeMyWords)
+    mywords: {},        // added in v16: My words, Garden cards for words met in the Manga Reader (see normalizeMyWords)
   };
 }
 
@@ -88,12 +88,39 @@ const LEVEL_RE = /^N[1-5]$/;
  * or null before it's answered) }. At most one arrives a day; nothing in it ever expires.
  */
 export function blankMessages() {
-  return { thread: [] };
+  return { thread: [], letters: [] };
+}
+
+/**
+ * Ren's monthly letters (js/letters.js), oldest first: { month ('YYYY-MM'), reg ('polite'|'casual'), lines (line ids,
+ * js/letter-data.js), words (Garden ids to recall), stats: { days, words, mocks }, snap: { hira, kata, chapters, units }
+ * (what the learner had, for the next letter), read, at (ms written) }. One per month at most.
+ */
+export const LETTERS_MAX = 60;
+const LINE_ID_RE = /^[a-zA-Z]{1,20}$/;
+function normalizeLetters(raw) {
+  if (!Array.isArray(raw)) return [];
+  const by = new Map();
+  for (const l of raw) {
+    if (!l || typeof l !== 'object' || typeof l.month !== 'string' || !/^\d{4}-\d{2}$/.test(l.month)) continue;
+    const st = l.stats && typeof l.stats === 'object' ? l.stats : {};
+    const sn = l.snap && typeof l.snap === 'object' ? l.snap : {};
+    by.set(l.month, {
+      month: l.month, reg: l.reg === 'polite' ? 'polite' : 'casual',
+      lines: Array.isArray(l.lines) ? l.lines.filter((x) => typeof x === 'string' && LINE_ID_RE.test(x)).slice(0, 20) : [],
+      words: Array.isArray(l.words) ? l.words.filter((x) => typeof x === 'string' && x.length < 80).slice(0, 5) : [],
+      stats: { days: Math.max(0, Math.round(num(st.days))), words: Math.max(0, Math.round(num(st.words))), mocks: Math.max(0, Math.round(num(st.mocks))) },
+      snap: { hira: !!sn.hira, kata: !!sn.kata, chapters: Math.max(0, Math.round(num(sn.chapters))), units: Math.max(0, Math.round(num(sn.units))) },
+      read: !!l.read, at: Math.max(0, num(l.at)),
+    });
+  }
+  return [...by.values()].sort((a, b) => (a.month < b.month ? -1 : 1)).slice(-LETTERS_MAX);
 }
 export const MESSAGES_MAX = 500;
 
 function normalizeMessages(raw) {
   const m = blankMessages();
+  if (raw && typeof raw === 'object') m.letters = normalizeLetters(raw.letters);
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.thread)) return m;
   const seen = new Set();
   for (const e of raw.thread) {
@@ -122,7 +149,14 @@ function mergeMessages(a, b) {
     const score = (x) => (x.reply != null ? 2 : 0) + (x.ok != null ? 1 : 0);
     if (!cur || score(e) > score(cur) || (score(e) === score(cur) && e.at < cur.at)) by.set(key, { ...e });
   }
-  return normalizeMessages({ thread: [...by.values()] });
+  // Letters: one per month from either device (the first one written wins), read on either device counts as read.
+  const letters = new Map();
+  for (const l of [...a.letters, ...b.letters]) {
+    const cur = letters.get(l.month);
+    if (!cur) letters.set(l.month, { ...l });
+    else letters.set(l.month, { ...(l.at < cur.at ? l : cur), read: cur.read || l.read });
+  }
+  return normalizeMessages({ thread: [...by.values()], letters: [...letters.values()] });
 }
 
 /**
@@ -189,7 +223,25 @@ function mergeLibrary(a, b) {
 }
 
 export function blankExam() {
-  return { history: [], real: {}, seen: [], later: {} };
+  return { history: [], real: {}, seen: [], later: {}, goal: null };
+}
+
+/**
+ * The test date goal (js/planner.js): { level, date ('YYYY-MM-DD' test day), days (study days a week, 3-7), from
+ * ('YYYY-MM-DD' the plan was made, which fixes its checkpoints), at (ms, set or removed) }. Removing it keeps the
+ * entry with level and date null, so a removal syncs like any change. Null when no goal was ever set.
+ */
+function normalizeGoal(g) {
+  if (!g || typeof g !== 'object' || !(Number(g.at) > 0)) return null;
+  const day = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
+  const on = LEVEL_RE.test(g.level) && day(g.date);
+  const days = Math.round(Number(g.days));
+  return {
+    level: on ? g.level : null, date: on ? g.date : null,
+    days: days >= 3 && days <= 7 ? days : 5,
+    from: day(g.from) ? g.from : dateKey(new Date(Number(g.at))),
+    at: Number(g.at),
+  };
 }
 
 /**
@@ -297,8 +349,13 @@ const MIGRATIONS = {
   11: (raw) => ({ ...raw, settings: { showAllLevels: false, ...(raw.settings || {}) } }),
   // v12 -> v13: the Library. No readers read yet; everything else passes through untouched.
   12: (raw) => ({ ...raw, library: raw.library && typeof raw.library === 'object' ? raw.library : blankLibrary() }),
-  // v13 -> v14: My words from the Manga Reader. None yet; everything else passes through untouched.
-  13: (raw) => ({ ...raw, mywords: raw.mywords && typeof raw.mywords === 'object' ? raw.mywords : {} }),
+  // v15 -> v16: My words from the Manga Reader. None yet; everything else passes through untouched.
+  15: (raw) => ({ ...raw, mywords: raw.mywords && typeof raw.mywords === 'object' ? raw.mywords : {} }),
+  // v14 -> v15: Ren's monthly letters (messages.letters). None yet; everything else passes through untouched.
+  14: (raw) => ({ ...raw, messages: { thread: [], ...(raw.messages && typeof raw.messages === 'object' ? raw.messages : {}), letters: [] } }),
+  // v13 -> v14: the test date planner (exam.goal, see normalizeGoal). No goal yet; everything else passes through
+  // untouched. The version moves so an older copy of the app, which would drop the goal, leaves synced v14 alone.
+  13: (raw) => ({ ...raw, exam: { ...(raw.exam && typeof raw.exam === 'object' ? raw.exam : blankExam()), goal: null } }),
 };
 
 /** Adds the guided-course field with defaults. Self-contained: it touches nothing else in the blob. */
@@ -428,6 +485,7 @@ function normalizeExam(raw) {
   if (raw.later && typeof raw.later === 'object') {
     for (const [lv, d] of Object.entries(raw.later)) if (LEVEL_RE.test(lv) && /^\d{4}-\d{2}-\d{2}$/.test(d)) e.later[lv] = d;
   }
+  e.goal = normalizeGoal(raw.goal);
   return e;
 }
 
@@ -705,6 +763,8 @@ export function mergeProgress(local, remote, now = Date.now()) {
     history: [...hist.values()].sort((x, y) => x.at - y.at).slice(-EXAM_HISTORY_MAX).map((h) => ({ ...h, parts: { ...h.parts } })),
     real, later,
     seen: union(a.exam.seen, b.exam.seen).slice(-EXAM_SEEN_MAX),
+    // The test date goal: the one set (or removed) most recently, on either device.
+    goal: [a.exam.goal, b.exam.goal].filter(Boolean).sort((x, y) => y.at - x.at).map((g) => ({ ...g }))[0] || null,
   };
 
   out.settings = { ...a.settings };   // per device: theme, voice range, "Show every level" (v12)…
@@ -1413,6 +1473,18 @@ class Store {
   // ----- Ren's Messages (js/messages.js) -----
   get messages() { return this.s.messages.thread; }
 
+  // ----- Ren's monthly letters (js/letters.js) -----
+  get letters() { return this.s.messages.letters; }
+  addLetter(letter) {
+    if (this.s.messages.letters.some((l) => l.month === letter.month)) return;
+    this.s.messages.letters = normalizeLetters([...this.s.messages.letters, letter]);
+    this.save();
+  }
+  markLetterRead(month) {
+    const l = this.s.messages.letters.find((x) => x.month === month);
+    if (l && !l.read) { l.read = true; this.save(); }
+  }
+
   // ----- library -----
   /** A Library reader's record ({ n, at, q, qt }), or null if it hasn't been read to the end. */
   readerResult(id) { return this.s.library.read[id] || null; }
@@ -1472,6 +1544,22 @@ class Store {
   markRealPass(level, on, now = Date.now()) {
     if (!LEVEL_RE.test(level)) return;
     this.s.exam.real[level] = { on: !!on, at: now };
+    this.save();
+  }
+
+  /** The test date goal (js/planner.js), or null when none is set. */
+  get goal() { const g = this.s.exam.goal; return g && g.level ? g : null; }
+
+  /** Sets the test date goal: a level, the test day ('YYYY-MM-DD') and study days a week. Its checkpoints start today. */
+  setGoal({ level, date, days }, now = new Date()) {
+    this.s.exam.goal = normalizeGoal({ level, date, days, from: dateKey(now), at: now.getTime() });
+    this.save();
+  }
+
+  /** Removes the test date goal (kept as a removal, so it syncs). */
+  clearGoal(now = Date.now()) {
+    const g = this.s.exam.goal;
+    this.s.exam.goal = { level: null, date: null, days: g ? g.days : 5, from: dateKey(new Date(now)), at: now };
     this.save();
   }
 

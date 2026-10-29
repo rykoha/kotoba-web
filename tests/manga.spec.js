@@ -1,6 +1,6 @@
 // Manga Reader: the offline dictionary (conjugations undone, bubbles split into words), the text reader's clean-up
 // (furigana and specks dropped), the practice pages, reading a practice bubble and planting a deck word, adding your
-// own page, boxing a bubble so it's read on the device, keeping a word as one of My words, and the v13 -> v14
+// own page, boxing a bubble so it's read on the device, keeping a word as one of My words, and the v15 -> v16
 // migration. Nothing in the reader may reach another site.
 import { readFileSync } from 'node:fs';
 import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
@@ -8,7 +8,7 @@ import * as dict from '../js/manga-dict.js';
 import { dropFurigana, tidy, otsu } from '../js/manga-ocr.js';
 import { MANGA_SAMPLES, plainText } from '../js/manga-samples.js';
 
-const base = (extra = {}) => ({ v: 14, items: {}, chapters: [], forged: [], dojo: [], storyReplays: {}, days: {}, settings: { hideIosHint: true, readingHelp: 'kana' }, engine: { placementSkip: true }, ...extra });
+const base = (extra = {}) => ({ v: 16, items: {}, chapters: [], forged: [], dojo: [], storyReplays: {}, days: {}, settings: { hideIosHint: true, readingHelp: 'kana' }, engine: { placementSkip: true }, ...extra });
 const PAGE = new URL('./fixtures/manga-page.png', import.meta.url).pathname;
 
 let loaded = false;
@@ -188,14 +188,14 @@ test.describe('Manga Reader', () => {
     expect([...hosts]).toEqual([new URL(page.url()).host]);
   });
 
-  test('v13 progress migrates to v14 with no My words, keeping everything else', async ({ page }) => {
+  test('v15 progress migrates to v16 with no My words, keeping everything else', async ({ page }) => {
     const card = { level: 3, due: Date.now() + 9e8, best: 0, r: 3, pl: Date.now() - 9e8, s: 5, d: 5, lr: Date.now() - 1e8 };
-    await seed(page, { ...base({ items: { 'n5:雨': card } }), v: 13 });
+    await seed(page, { ...base({ items: { 'n5:雨': card } }), v: 15 });
     await page.goto('./#/play/manga');
     await expect(view(page).locator('h2')).toHaveText('漫画');
     await page.evaluate(async () => (await import('./js/store.js')).store.save());
     const s = await saved(page);
-    expect(s.v).toBe(14);
+    expect(s.v).toBe(16);
     expect(s.mywords).toEqual({});
     expect(s.items['n5:雨'].r).toBe(3);
   });
