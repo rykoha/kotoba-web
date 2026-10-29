@@ -439,7 +439,7 @@ test.describe('saved progress v7 → v8', () => {
     await seed(page, FIXTURE_V7);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(14);
+    expect(s.v).toBe(15);
     expect(s.settings).toEqual({ ...FIXTURE_V7.settings, autoMic: false, voice: null, showAllLevels: false });
     expect(s.coach).toEqual({ ears: [] });
     expect(s.items).toEqual(FIXTURE_V7.items);

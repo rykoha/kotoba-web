@@ -15,6 +15,7 @@ import { POINT, QUICK } from '../js/exam-bank-listen1.js';
 import { TASK, UTTER } from '../js/exam-bank-listen2.js';
 import { PARAPHRASE, TEXT_GRAMMAR, SHORT, MID, INFO } from '../js/exam-bank-reading.js';
 import { ALL_MESSAGES, SENDERS } from '../js/messages-data.js';
+import { ALL_LETTER_LINES } from '../js/letter-data.js';
 import { READERS } from '../js/library-data.js';
 import { rivalLines } from '../js/rival-data.js';
 import { encounterLines, SCENES as MEET_SCENES } from '../js/encounter-data.js';
@@ -110,6 +111,8 @@ for (const [bank, level] of [[[...TASK, ...POINT, ...UTTER, ...QUICK], 'N5'], [[
 }
 // Ren's Messages: each message in its sender's voice.
 for (const m of ALL_MESSAGES) { add(m.jp, SENDERS[m.from].voice, null, lv(m)); pairs.push([m.jp, m.kana]); }
+// Ren's monthly letters (js/letters.js), in Ren's voice.
+for (const l of ALL_LETTER_LINES) { add(l.jp, SENDERS.ren.voice, null, 'N5'); pairs.push([l.jp, l.kana]); }
 // Library readers: each line in its speaker's voice.
 for (const r of READERS) for (const l of r.lines) { add(l.jp, l.speaker.voice, null, lv(r)); pairs.push([l.jp, l.reading]); }
 // Rival Battle: each rival's taunts, counters and endings in their own voice, and Ren's finisher shouts.
@@ -206,5 +209,6 @@ for (const m of ALL_MESSAGES) {
   if (m.kana && m.kana !== m.jp) lookup.push([m.kana, hints, lv(m)]);
 }
 for (const r of READERS) for (const l of r.lines) lookup.push([l.jp, NAMES, lv(r)]);
+for (const l of ALL_LETTER_LINES) { lookup.push([l.jp, NAMES, 'N5']); if (l.kana !== l.jp) lookup.push([l.kana, NAMES, 'N5']); }
 
 process.stdout.write(JSON.stringify({ clips: out, pairs, lookup }));

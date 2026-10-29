@@ -1545,3 +1545,33 @@ body.has-tabs .lk-sheet { bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-
 .plan-screen .chips .chip-toggle { font-family: inherit; }
 .plan-date { display: block; margin-top: var(--sp-1); min-height: 44px; padding: var(--sp-1) var(--sp-2); border: 1.5px solid var(--border-strong); border-radius: var(--r-md); background: var(--surface); color: var(--ink); font: inherit; max-width: 100%; }
 .plan-checks { list-style: none; padding-left: 0; }
+
+/* Ren's monthly letter (js/letters.js) */
+.letter { border-left: 4px solid var(--who, var(--accent)); }
+.letter .section-title { font-size: var(--fs-lg); }
+.letter-lines { list-style: none; padding-left: 0; display: grid; gap: var(--sp-3); }
+.letter-line .msg-text { font-size: var(--fs-md); margin-bottom: var(--sp-1); }
+.letter-words { display: grid; gap: var(--sp-2); }
+.letter-word { justify-content: flex-start; text-align: left; }
+
+/* Things I can do (js/cando.js) */
+.cd-list { list-style: none; padding-left: 0; display: grid; gap: var(--sp-2); }
+.cd-row { display: flex; gap: var(--sp-3); align-items: flex-start; }
+.cd-mark { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border-strong); display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.cd-row.lit .cd-mark { background: var(--good); border-color: var(--good); color: var(--bg); }
+.cd-mark svg { width: 15px; height: 15px; }
+.cd-new { display: inline-block; font-size: var(--fs-xs); font-weight: 800; padding: 0 var(--sp-2); border-radius: var(--r-pill); background: var(--accent-soft); }
+
+/* Voice time capsule (js/capsule.js) */
+.cap-ja { font-size: var(--fs-md); }
+.cap-chart { width: 100%; max-width: 420px; height: auto; display: block; background: var(--surface-2); border-radius: var(--r-md); }
+.cap-chart path { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.cap-chart .cap-model { stroke: var(--ink); opacity: 0.25; stroke-width: 4; }
+.cap-chart .cap-first { stroke: var(--trace, var(--ink)); stroke-dasharray: 5 4; }
+.cap-chart .cap-last { stroke: var(--accent); }
+.cap-chart .cap-mid { stroke: var(--border); stroke-width: 1; }
+.cap-key span::before { content: ''; display: inline-block; width: 18px; height: 0; margin-right: 4px; vertical-align: middle; border-top: 3px solid var(--ink); }
+.cap-key .k-model::before { opacity: 0.3; }
+.cap-key .k-first::before { border-top-style: dashed; border-color: var(--trace, var(--ink)); }
+.cap-key .k-last::before { border-color: var(--accent); }
+.cap-item .linkbtn, .letter-line .linkbtn { align-self: flex-start; }
