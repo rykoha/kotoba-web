@@ -3,7 +3,10 @@
 // kept in this device's storage under its own key, apart from the progress, so it is never in an export code.
 // Syncing never overwrites: it fetches the other devices' copy, merges it into this one (store.mergeProgress) and
 // uploads the result. Any failure (offline, a bad token) leaves progress untouched and leaves a calm note in Settings.
+// Opt-in from Today's words: the same gist also holds today's words (WIDGET_FILE) for the home screen widget, which
+// reads that one file by its link (a secret gist's raw link needs no token, so the token never leaves this device).
 import { store, mergeProgress, STATE_VERSION } from './store.js';
+import { widgetFeed, WIDGET_FILE } from './daily-words.js';
 
 const KEY = 'kotobaBeat.sync';
 export const API = 'https://api.github.com';
@@ -11,7 +14,7 @@ export const GIST_FILE = 'kotoba-beat-progress.json';
 /** Automatic syncs (tab shown again, a screen finished) wait at least this long after the last try. */
 const AUTO_GAP = 20_000;
 
-const blankCfg = () => ({ token: '', gistId: '', lastSync: 0, note: '' });
+const blankCfg = () => ({ token: '', gistId: '', lastSync: 0, note: '', widget: false, widgetUrl: '' });
 let cfg = loadCfg();
 let running = null;
 let lastTry = 0;
@@ -27,6 +30,8 @@ function loadCfg() {
         gistId: typeof c.gistId === 'string' && /^[0-9a-f]+$/i.test(c.gistId) ? c.gistId : '',
         lastSync: Number(c.lastSync) || 0,
         note: typeof c.note === 'string' ? c.note : '',
+        widget: c.widget === true,
+        widgetUrl: typeof c.widgetUrl === 'string' && c.widgetUrl.startsWith('https://gist.githubusercontent.com/') ? c.widgetUrl : '',
       };
     }
   } catch (e) { /* private mode or damaged: not connected */ }
@@ -42,7 +47,7 @@ function emitStatus() { statusListeners.forEach((fn) => { try { fn(status()); } 
 
 /** What Settings shows. Never includes the token. */
 export function status() {
-  return { connected: !!cfg.token, gistId: cfg.gistId, lastSync: cfg.lastSync, note: cfg.note, busy: !!running };
+  return { connected: !!cfg.token, gistId: cfg.gistId, lastSync: cfg.lastSync, note: cfg.note, busy: !!running, widget: cfg.widget, widgetUrl: cfg.widget ? cfg.widgetUrl : '' };
 }
 export function onStatus(fn) { statusListeners.add(fn); return () => statusListeners.delete(fn); }
 /** Called after a sync brought in progress from another device. */
@@ -120,6 +125,15 @@ async function readRemote(gist) {
   return data;
 }
 
+/** The widget file's link without its version, so it always gives the newest copy. */
+function latestRawUrl(gist) {
+  const login = gist && gist.owner && gist.owner.login;
+  if (login && /^[A-Za-z0-9-]+$/.test(login)) return `https://gist.githubusercontent.com/${login}/${gist.id}/raw/${WIDGET_FILE}`;
+  const raw = gist && gist.files && gist.files[WIDGET_FILE] && gist.files[WIDGET_FILE].raw_url;
+  const m = typeof raw === 'string' && /^https:\/\/gist\.githubusercontent\.com\/([^/]+)\/([0-9a-f]+)\/raw\//i.exec(raw);
+  return m ? `https://gist.githubusercontent.com/${m[1]}/${m[2]}/raw/${WIDGET_FILE}` : '';
+}
+
 const fileContent = (data) => JSON.stringify({ app: 'kotoba-beat', v: STATE_VERSION, synced: new Date().toISOString(), data });
 
 async function run() {
@@ -146,19 +160,28 @@ async function run() {
   }
 
   const data = store.syncData();
+  const widget = cfg.widget ? widgetFeed() : null;
+  const hasWidget = !!(gist && gist.files && gist.files[WIDGET_FILE]);
+  let saved = gist;
   if (!gist) {
+    const files = { [GIST_FILE]: { content: fileContent(data) } };
+    if (widget) files[WIDGET_FILE] = { content: widget };
     const made = await api('/gists', {
       method: 'POST',
-      body: { description: 'Kotoba Beat progress (synced by the app; private)', public: false, files: { [GIST_FILE]: { content: fileContent(data) } } },
+      body: { description: 'Kotoba Beat progress (synced by the app; private)', public: false, files },
     });
     if (!made || !made.id) throw new SyncError('server');
     cfg.gistId = String(made.id);
+    saved = made;
   } else {
     cfg.gistId = String(gist.id);
-    if (!remote || JSON.stringify(data) !== JSON.stringify(remote)) {
-      await api('/gists/' + cfg.gistId, { method: 'PATCH', body: { files: { [GIST_FILE]: { content: fileContent(data) } } } });
-    }
+    const files = {};
+    if (!remote || JSON.stringify(data) !== JSON.stringify(remote)) files[GIST_FILE] = { content: fileContent(data) };
+    if (widget && (!hasWidget || gist.files[WIDGET_FILE].content !== widget)) files[WIDGET_FILE] = { content: widget };
+    if (!widget && hasWidget) files[WIDGET_FILE] = null;   // the widget was turned off: its file goes
+    if (Object.keys(files).length) saved = await api('/gists/' + cfg.gistId, { method: 'PATCH', body: { files } }) || gist;
   }
+  if (widget) cfg.widgetUrl = latestRawUrl(saved) || latestRawUrl(gist) || cfg.widgetUrl;
   cfg.lastSync = Date.now();
   cfg.note = '';
   saveCfg();
@@ -190,6 +213,13 @@ export function looksLikeToken(t) { return /^(github_pat_|gh[pousr]_)[A-Za-z0-9_
 /** Saves the token on this device and syncs: finds the existing gist by its file name, or makes one. */
 export function connect(token) {
   cfg = { ...blankCfg(), token: String(token || '').trim() };
+  saveCfg();
+  return sync({ force: true });
+}
+
+/** Turns the home screen widget's feed on or off, and syncs so the gist matches. */
+export function setWidget(on) {
+  cfg.widget = !!on;
   saveCfg();
   return sync({ force: true });
 }

@@ -333,6 +333,12 @@ Settings > Sync across devices keeps progress the same on the PC and the iPhone 
 - **Failures.** Being offline or a bad token never touches progress or interrupts a game. Settings shows a calm note, and the next sync tries again. A synced copy from a newer app version is left alone until this device updates.
 - **Reset.** With sync on, Reset only erases this device, and the next sync brings the progress back. Disconnect first to start over.
 
+## Today's words and the home screen widget
+
+- **Today's words** (`#/words`, `js/daily-words.js`, `js/words-page.js`): ten words a day to flip through, picked from the learner's Garden: words that need help first, then the words the Garden brings in today, then planted words due soonest. A beginner with nothing planted sees the first starter phrases and deck words. The set is picked once a day and kept on the device (`kotobaBeat.dailyWords`, not progress), so the screen and the widget agree all day. Each meaning stays hidden until tapped, so it's recalled first. `#/words/3` opens at the third word.
+- **Widget:** a web app can't make iPhone home screen widgets, so the widget is a script for the free Scriptable app (`widget/kotoba-widget.js`), copied from the Today's words screen with the site's address and the learner's link filled in. It shows a word, then the same word with its meaning, then the next word (about 30 minutes each, on iOS's own refresh schedule), works small, medium and on the Lock Screen, and opens Today's words at that word when tapped.
+- **Where its words come from:** with Sync across devices on, the learner can turn on "Send today's words to the widget". Each sync then also writes `kotoba-beat-widget.json` (today's words, kana, romaji, meaning) into the same private gist, and the script reads that one file by its raw link, which needs no token. Turning it off deletes the file. Without sync, the script reads this site's `js/n5.js` and shows 10 deck words a day in order. Either way it keeps the last words it read, for offline.
+
 ## N5 deck
 
 `tools/n5.tsv` holds a 686-word JLPT N5 deck in teaching order: kana, meaning, pitch accent, and an example sentence

@@ -38,6 +38,7 @@ import * as planner from './planner.js';
 import * as letters from './letters.js';
 import * as cando from './cando.js';
 import * as capsule from './capsule.js';
+import * as words from './words-page.js';
 import { skillMini } from './skill-chart.js';
 import * as progress from './progress.js';
 import { checkinCard, checkinHandlers } from './checkin.js';
@@ -252,6 +253,11 @@ function routeView(a, b, c) {
   if (a === 'cando') {
     setTitle('Things I can do', true);
     cleanup = cando.mount(view);
+    return;
+  }
+  if (a === 'words') {
+    setTitle("Today's words", true);
+    cleanup = words.mount(view, b);
     return;
   }
   if (a === 'capsule') {
@@ -482,6 +488,7 @@ function renderHome() {
         ${planner.planCard()}
         ${readinessCard()}
         ${skillMini()}
+        ${words.wordsCard()}
         ${libraryCard()}
         ${!placementShown && !store.trackDone('hiragana') && !store.clearedLessons.size ? `<a class="panel hint link-panel" href="#/play/dojo"><span class="grow small">🔤 <span class="strong">New to reading Japanese?</span> Start in the Reading Dojo: hiragana, katakana, then kanji. Until then, every game shows romaji (tap ふa at the top to change it).</span><span class="dim chev" aria-hidden="true">›</span></a>` : ''}
         ${showHint ? `<div class="panel hint"><span class="grow small">📱 On iPhone: <span class="strong">Share › Add to Home Screen</span> keeps your progress safe (Safari may clear website data after ~7 days unused).</span>

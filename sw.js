@@ -1,6 +1,6 @@
 // Service worker: precache every file so the app works offline. Bump CACHE_VERSION on every update. Voice clips that
 // only a later JLPT level uses (LATER) are cached once that level is unlocked: the app sends { type: 'cache-level' }.
-const CACHE_VERSION = 'kotoba-beat-v56';
+const CACHE_VERSION = 'kotoba-beat-v57';
 // The Manga Reader's big optional files (manga/: the dictionary and the text reader, about 11 MB) are not precached:
 // they're fetched the first time the reader needs them and kept in their own cache, which app updates leave alone.
 // Bump MANGA_CACHE only when a file in manga/ changes.
@@ -10,6 +10,7 @@ const FILES = [
   './index.html',
   './styles.css',
   './manifest.webmanifest',
+  './widget/kotoba-widget.js',
   './js/ai-chat.js',
   './js/app.js',
   './js/audio.js',
@@ -21,6 +22,7 @@ const FILES = [
   './js/clips.js',
   './js/course-data.js',
   './js/course.js',
+  './js/daily-words.js',
   './js/data.js',
   './js/dictation-check.js',
   './js/dojo-data.js',
@@ -107,6 +109,7 @@ const FILES = [
   './js/tuning.js',
   './js/ui.js',
   './js/word-help.js',
+  './js/words-page.js',
   './js/words.js',
   './js/modes/brush.js',
   './js/modes/build.js',
