@@ -108,10 +108,10 @@ function build(data) {
   line(w, word.jp, Font.boldSystemFont(word.jp.length > 4 ? big - 8 : big), ink);
   if (kana) line(w, kana, Font.systemFont(14), dim);
   if (data.romaji && word.romaji) line(w, word.romaji, Font.italicSystemFont(12), dim);
-  // A medium widget has room for the example sentence, in kana: read it, guess the meaning, tap to check.
-  if (!small && (word.exKana || word.ex)) { w.addSpacer(6); line(w, word.exKana || word.ex, Font.systemFont(13), ink, 2); }
-  w.addSpacer(6);
-  line(w, 'Meaning? Tap to check', Font.systemFont(12), dim);
+  // The example sentence, in kana: read it, guess the meaning, tap to check. A small widget fits it in place of the hint.
+  const ex = word.exKana || word.ex;
+  if (ex) { w.addSpacer(small ? 4 : 6); line(w, ex, Font.systemFont(small ? 11 : 13), ink, 2); }
+  if (!small || !ex) { w.addSpacer(6); line(w, 'Meaning? Tap to check', Font.systemFont(12), dim); }
   w.addSpacer();
   return w;
 }
@@ -179,7 +179,31 @@ show(i, true);   // the word you tapped opens with its meaning
   await view.present(false);
 }
 
+/**
+ * Keeps this script up to date: about twice a day it fetches the newest copy from the site, fills in this copy's link
+ * and site, and saves it over itself, so new features arrive without copying the script again.
+ */
+async function selfUpdate() {
+  const stamp = fm.joinPath(fm.documentsDirectory(), 'kotoba-words-updated.txt');
+  try {
+    const last = fm.fileExists(stamp) ? Number(fm.readString(stamp)) || 0 : 0;
+    if (Date.now() - last < 12 * 3600000) return;
+    fm.writeString(stamp, String(Date.now()));
+    const req = new Request(SITE + 'widget/kotoba-widget.js?t=' + Date.now());
+    req.timeoutInterval = 15;
+    let text = await req.loadString();
+    const feedLine = 'const FEED = ' + "'';";
+    const siteLine = 'const SITE = ' + "'https://rykoha.github.io/kotoba-web/';";
+    if (!text.includes(feedLine) || !text.includes('Script.setWidget')) return;
+    text = text.replace(feedLine, 'const FEED = ' + JSON.stringify(FEED) + ';').replace(siteLine, 'const SITE = ' + JSON.stringify(SITE) + ';');
+    const cloud = FileManager.iCloud();
+    const files = module.filename.startsWith(cloud.documentsDirectory()) ? cloud : FileManager.local();
+    if (files.readString(module.filename) !== text) files.writeString(module.filename, text);
+  } catch (e) { /* offline or no access: try again next time */ }
+}
+
 const data = await load();
+await selfUpdate();
 if (config.runsInWidget || config.runsInAccessoryWidget) {
   Script.setWidget(build(data));
 } else if (data && data.words && data.words.length && args.queryParameters && args.queryParameters.word != null) {
