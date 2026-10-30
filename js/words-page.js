@@ -50,7 +50,7 @@ export function mount(el, start = 1) {
         ${st.note ? `<p class="small note-c">${esc(st.note)}</p>` : ''}`;
     }
     return `<h2 class="section-title" id="widget-h">📱 On your home screen</h2>
-      <p class="small">An iPhone widget can show these words all day. It shows a word, then its meaning a while later, and moves on through the set. Tapping it opens this screen at that word.</p>
+      <p class="small">An iPhone widget can show these words all day, a new one about every half hour. Recall the meaning, then tap the widget: a card opens in Scriptable with the meaning and an example sentence, and you can flip through the rest of today's words there.</p>
       ${feed}
       <ol class="small widget-steps">
         <li>Install <span class="strong">Scriptable</span> from the App Store (free).</li>
@@ -59,7 +59,7 @@ export function mount(el, start = 1) {
         <li>Touch and hold the new widget, tap <span class="strong">Edit Widget</span>, and choose <span class="strong">Kotoba Words</span> as the script. It works on the Lock Screen too.</li>
       </ol>
       <button class="btn" data-act="copyscript" ${st.connected && st.widget && !st.widgetUrl ? 'disabled' : ''}>📋 Copy widget script</button>
-      <p class="tiny dim">iOS refreshes widgets on its own schedule (about every 15 to 60 minutes), so a word can stay a little longer. A tap opens Safari, since iPhone can't open Home Screen web apps from a widget. The script reads only your widget file${st.connected ? '' : ' (or this site\'s N5 deck)'}; your GitHub token never goes into it.</p>`;
+      <p class="tiny dim">iOS refreshes widgets on its own schedule (about every 15 to 60 minutes), so a word can stay a little longer. iPhone only lets real App Store apps change a widget in place, so the meaning opens in Scriptable's card instead. On the Lock Screen, pick the wide (rectangular) size. The script reads only your widget file${st.connected ? '' : ' (or this site\'s N5 deck)'}; your GitHub token never goes into it.</p>`;
   }
 
   function render() {

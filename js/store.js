@@ -34,7 +34,7 @@ export const HELP_CLEAR = 2;
 export const SKILLS = ['kana', 'kanji', 'vocab', 'grammar', 'listening', 'pitch', 'speaking', 'counters'];
 
 /** Version of the saved progress shape. Bump it and add a step to MIGRATIONS whenever the shape changes. */
-export const STATE_VERSION = 16;
+export const STATE_VERSION = 17;
 
 function blank() {
   return {
@@ -66,6 +66,7 @@ function blank() {
     messages: blankMessages(),   // added in v11: Ren's Messages (see blankMessages and js/messages.js)
     library: blankLibrary(),     // added in v13: Library readers read (see blankLibrary and js/modes/library.js)
     mywords: {},        // added in v16: My words, Garden cards for words met in the Manga Reader (see normalizeMyWords)
+    daily: null,        // added in v17: today's words { date, ids, at } (js/daily-words.js), shared so every device shows the same set
   };
 }
 
@@ -349,6 +350,8 @@ const MIGRATIONS = {
   11: (raw) => ({ ...raw, settings: { showAllLevels: false, ...(raw.settings || {}) } }),
   // v12 -> v13: the Library. No readers read yet; everything else passes through untouched.
   12: (raw) => ({ ...raw, library: raw.library && typeof raw.library === 'object' ? raw.library : blankLibrary() }),
+  // v16 -> v17: today's words, shared across devices. None picked yet.
+  16: (raw) => ({ ...raw, daily: null }),
   // v15 -> v16: My words from the Manga Reader. None yet; everything else passes through untouched.
   15: (raw) => ({ ...raw, mywords: raw.mywords && typeof raw.mywords === 'object' ? raw.mywords : {} }),
   // v14 -> v15: Ren's monthly letters (messages.letters). None yet; everything else passes through untouched.
@@ -453,6 +456,7 @@ function normalize(input) {
   s.messages = normalizeMessages(raw.messages);
   s.library = normalizeLibrary(raw.library);
   s.mywords = normalizeMyWords(raw.mywords);
+  s.daily = normalizeDaily(raw.daily);
   return s;
 }
 
@@ -692,6 +696,20 @@ function mergeMined(a, b, aItems, bItems) {
  * - My words (v14): union; each word's Garden card merges like any other review item.
  * - Settings and the course on/off switch: this device's (they stay per device).
  */
+/** Today's words as saved: { date: 'YYYY-MM-DD', ids: [...], at: ms }, or null. */
+function normalizeDaily(d) {
+  if (!d || typeof d !== 'object' || typeof d.date !== 'string' || !Array.isArray(d.ids)) return null;
+  const ids = d.ids.filter((x) => typeof x === 'string').slice(0, 20);
+  return ids.length ? { date: d.date, ids, at: Number(d.at) || 0 } : null;
+}
+
+/** The later day's set; on the same day, the set picked first, so a device that synced late takes the other's. */
+function mergeDaily(x, y) {
+  if (!x || !y) return x || y ? { ...(x || y), ids: [...(x || y).ids] } : null;
+  const pick = x.date !== y.date ? (x.date > y.date ? x : y) : (y.at < x.at ? y : x);
+  return { ...pick, ids: [...pick.ids] };
+}
+
 export function mergeProgress(local, remote, now = Date.now()) {
   const a = normalize(local), b = normalize(remote);
   const out = { ...a, v: STATE_VERSION };
@@ -759,6 +777,7 @@ export function mergeProgress(local, remote, now = Date.now()) {
   out.messages = mergeMessages(a.messages, b.messages);
   out.library = mergeLibrary(a.library, b.library);
   out.mywords = mergeMyWords(a.mywords, b.mywords);
+  out.daily = mergeDaily(a.daily, b.daily);
   out.exam = {
     history: [...hist.values()].sort((x, y) => x.at - y.at).slice(-EXAM_HISTORY_MAX).map((h) => ({ ...h, parts: { ...h.parts } })),
     real, later,
@@ -1265,6 +1284,13 @@ class Store {
 
   // ----- story saga: line mining and chapter results -----
   get mined() { return this.s.saga.mined; }
+
+  /** Today's words as picked (js/daily-words.js): { date, ids, at } or null. */
+  get daily() { return this.s.daily; }
+  setDaily(date, ids, now = Date.now()) {
+    this.s.daily = { date, ids: ids.slice(), at: now };
+    this.save();
+  }
 
   /** Saves a pasted line as a Garden card (planted, due now). Returns its id. */
   mineLine({ jp, reading, en, parts = [] }) {

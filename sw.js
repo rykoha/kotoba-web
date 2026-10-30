@@ -1,6 +1,6 @@
 // Service worker: precache every file so the app works offline. Bump CACHE_VERSION on every update. Voice clips that
 // only a later JLPT level uses (LATER) are cached once that level is unlocked: the app sends { type: 'cache-level' }.
-const CACHE_VERSION = 'kotoba-beat-v58';
+const CACHE_VERSION = 'kotoba-beat-v59';
 // The Manga Reader's big optional files (manga/: the dictionary and the text reader, about 11 MB) are not precached:
 // they're fetched the first time the reader needs them and kept in their own cache, which app updates leave alone.
 // Bump MANGA_CACHE only when a file in manga/ changes.

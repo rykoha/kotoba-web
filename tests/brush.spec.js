@@ -2,7 +2,7 @@
 // that show the strokes and allow a retry, the guide fading, only Dojo kana, the Reading Dojo's schedule, the Today
 // reading block, Settings credits, and the v9 -> v10 migration (tests/fixtures/progress-v9.json) and sync merge.
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, studiedDays } from './helpers.js';
 
 const FIXTURE_V9 = JSON.parse(readFileSync(new URL('./fixtures/progress-v9.json', import.meta.url), 'utf8'));
 const DAY = 86_400_000;
@@ -515,11 +515,11 @@ test.describe('saved progress v9 → v10', () => {
     await seed(page, FIXTURE_V9);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.items).toEqual(FIXTURE_V9.items);
     expect(s.settings).toEqual({ ...FIXTURE_V9.settings, showAllLevels: false });
     expect(s.coach).toEqual(FIXTURE_V9.coach);
-    for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'grammar', 'days', 'storyReplays', 'exam']) expect(s[k], k).toEqual(k === 'exam' ? { ...FIXTURE_V9[k], goal: null } : FIXTURE_V9[k]);   // v14 adds the test date goal
+    for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'grammar', 'days', 'storyReplays', 'exam']) expect(k === 'days' ? studiedDays(s[k]) : s[k], k).toEqual(k === 'exam' ? { ...FIXTURE_V9[k], goal: null } : k === 'days' ? studiedDays(FIXTURE_V9[k]) : FIXTURE_V9[k]);   // v14 adds the test date goal
   });
 
   test('migrated kana can be drawn; drawing cards survive reload, export and import, and the sync merge', async ({ page }) => {

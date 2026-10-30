@@ -2,7 +2,7 @@
 // live line, the ladder, "just this step", "ears first" and the warm-up buttons, driven by a fake microphone that
 // sings known pitch curves (an oscillator standing in for getUserMedia).
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, studiedDays } from './helpers.js';
 
 const FIXTURE_V7 = JSON.parse(readFileSync(new URL('./fixtures/progress-v7.json', import.meta.url), 'utf8'));
 
@@ -439,12 +439,12 @@ test.describe('saved progress v7 → v8', () => {
     await seed(page, FIXTURE_V7);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.settings).toEqual({ ...FIXTURE_V7.settings, autoMic: false, voice: null, showAllLevels: false });
     expect(s.coach).toEqual({ ears: [] });
     expect(s.items).toEqual(FIXTURE_V7.items);
     expect(s.grammar).toEqual(FIXTURE_V7.grammar);
-    expect(s.days).toEqual(FIXTURE_V7.days);
+    expect(studiedDays(s.days)).toEqual(studiedDays(FIXTURE_V7.days));
     for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course', 'engine']) expect(s[k]).toEqual(FIXTURE_V7[k]);
   });
 

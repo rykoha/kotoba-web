@@ -1,13 +1,14 @@
 // Kotoba Beat: today's words on your iPhone home screen. A script for the free Scriptable app.
 // Set it up from Kotoba Beat › Today's words › "On your home screen" (that copies this script with your link filled in).
 //
-// Each word shows first on its own (recall the meaning), then with its meaning, then the next word comes. Tap the
-// widget to open Today's words at that word. Works as a small or medium home screen widget and on the Lock Screen.
+// The widget shows a word (recall its meaning). Tap it: a card opens with the meaning and an example sentence, and
+// you can flip through the rest of today's words there. The widget moves to the next word about every half hour.
+// Works as a small or medium home screen widget and on the Lock Screen.
 
 // Your widget link from Kotoba Beat (needs Sync across devices). Empty: 10 words a day from the N5 deck, in order.
 const FEED = '';
 const SITE = 'https://rykoha.github.io/kotoba-web/';
-// How long each half (the word, then the word with its meaning) is meant to show. iOS decides the real refresh times.
+// How long each word is meant to stay. iOS decides the real refresh times.
 const SLOT_MIN = 30;
 const PER_DAY = 10;
 
@@ -36,7 +37,10 @@ async function load() {
       if (deck.length) {
         const start = (dayNumber() * PER_DAY) % deck.length;
         const words = [];
-        for (let k = 0; k < PER_DAY; k++) { const [jp, kana, en] = deck[(start + k) % deck.length]; words.push({ jp, kana, en }); }
+        for (let k = 0; k < PER_DAY; k++) {
+          const [jp, kana, en, , ex, exKana, exEn] = deck[(start + k) % deck.length];
+          words.push({ jp, kana, en, ex, exKana, exEn });
+        }
         const j = { day: dayNumber(), romaji: false, words };
         fm.writeString(CACHE, JSON.stringify(j));
         return j;
@@ -56,9 +60,13 @@ function line(stack, text, font, color, lines = 1) {
   t.font = font;
   t.textColor = color;
   t.lineLimit = lines;
-  t.minimumScaleFactor = 0.5;
+  t.minimumScaleFactor = 0.6;
   return t;
 }
+
+const kanaOf = (w) => (w.kana && w.kana !== w.jp ? w.kana : '');
+/** Tapping the widget runs this script again in Scriptable, which opens the card at this word. */
+const tapUrl = (at) => `scriptable:///run/${encodeURIComponent(Script.name())}?word=${at}`;
 
 function build(data) {
   const family = config.widgetFamily || 'medium';
@@ -72,25 +80,27 @@ function build(data) {
   }
   const slot = Math.floor(Date.now() / (SLOT_MIN * 60000));
   const n = data.words.length;
-  const at = Math.floor(slot / 2) % n;
-  const reveal = slot % 2 === 1;
+  const at = slot % n;
   const word = data.words[at];
-  const kana = word.kana && word.kana !== word.jp ? word.kana : '';
+  const kana = kanaOf(word);
   w.refreshAfterDate = new Date((slot + 1) * SLOT_MIN * 60000);
-  w.url = SITE + (FEED ? '#/words/' + (at + 1) : '#/words');
+  w.url = tapUrl(at);
 
   if (family === 'accessoryInline') {
-    line(w, reveal ? `${word.jp} · ${word.en}` : `${word.jp}${kana ? ' ' + kana : ''}`, Font.systemFont(12), ink);
+    line(w, `${word.jp}${kana ? ' (' + kana + ')' : ''}`, Font.systemFont(14), ink);
     return w;
   }
   if (family === 'accessoryRectangular' || family === 'accessoryCircular') {
-    line(w, word.jp, Font.boldSystemFont(16), ink);
-    if (kana) line(w, kana, Font.systemFont(12), ink);
-    line(w, reveal ? word.en : 'meaning?', Font.systemFont(12), ink);
+    w.addAccessoryWidgetBackground = true;
+    w.setPadding(2, 6, 2, 6);
+    line(w, word.jp, Font.boldSystemFont(24), ink);
+    if (kana) line(w, kana, Font.systemFont(14), ink);
+    line(w, 'tap for the meaning', Font.systemFont(11), ink).textOpacity = 0.7;
     return w;
   }
 
-  const big = family === 'small' ? 30 : 36;
+  const small = family === 'small';
+  const big = small ? 30 : 36;
   w.backgroundColor = paper;
   w.setPadding(14, 16, 14, 16);
   line(w, `今日の言葉  ${at + 1}/${n}`, Font.mediumSystemFont(11), flame);
@@ -98,14 +108,85 @@ function build(data) {
   line(w, word.jp, Font.boldSystemFont(word.jp.length > 4 ? big - 8 : big), ink);
   if (kana) line(w, kana, Font.systemFont(14), dim);
   if (data.romaji && word.romaji) line(w, word.romaji, Font.italicSystemFont(12), dim);
+  // A medium widget has room for the example sentence, in kana: read it, guess the meaning, tap to check.
+  if (!small && (word.exKana || word.ex)) { w.addSpacer(6); line(w, word.exKana || word.ex, Font.systemFont(13), ink, 2); }
   w.addSpacer(6);
-  if (reveal) line(w, word.en, Font.semiboldSystemFont(family === 'small' ? 13 : 15), ink, 2);
-  else line(w, FEED ? 'Meaning? Tap to check' : 'Meaning? It shows next', Font.systemFont(12), dim);
+  line(w, 'Meaning? Tap to check', Font.systemFont(12), dim);
   w.addSpacer();
   return w;
 }
 
-const widget = build(await load());
-if (config.runsInWidget) Script.setWidget(widget);
-else await widget.presentMedium();
+const esc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/** The card a tap opens: the word with its meaning and example, and Back / Next through today's words. */
+async function showCard(data, start) {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root { color-scheme: light dark; --ink:#16131d; --dim:#6b6474; --flame:#c4300c; --paper:#f6f1e8; --card:#fffdf8; --line:rgba(22,19,29,.12); }
+@media (prefers-color-scheme: dark) { :root { --ink:#f3eee6; --dim:#a59eb0; --flame:#ff6b3d; --paper:#0e0c14; --card:#1a1722; --line:rgba(255,255,255,.12); } }
+* { box-sizing: border-box; }
+body { margin:0; padding:24px 16px 32px; background:var(--paper); color:var(--ink); font:17px -apple-system, "Hiragino Sans", sans-serif; text-align:center; }
+.count { color:var(--flame); font-weight:700; font-size:13px; letter-spacing:.04em; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px 16px; margin:12px 0 16px; }
+.jp { font-size:52px; font-weight:800; line-height:1.2; margin:4px 0; }
+.kana { font-size:20px; color:var(--dim); }
+.romaji { font-size:15px; color:var(--dim); font-style:italic; }
+.en { font-size:22px; font-weight:700; margin:18px 0 0; }
+.ex { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+.ex .s { font-size:19px; } .ex .k { font-size:15px; color:var(--dim); margin-top:4px; } .ex .e { font-size:15px; margin-top:6px; }
+button { font:inherit; font-weight:700; border-radius:12px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); padding:12px; min-height:48px; }
+.reveal { width:100%; margin-top:18px; }
+.nav { display:flex; gap:10px; } .nav button { flex:1; } .nav .next { background:var(--flame); color:#fff; border-color:var(--flame); }
+.hide { display:none; }
+a { color:var(--flame); display:inline-block; margin-top:18px; font-size:15px; }
+</style></head><body>
+<div class="count" id="count"></div>
+<div class="card">
+  <div class="jp" id="jp"></div><div class="kana" id="kana"></div><div class="romaji" id="romaji"></div>
+  <button class="reveal" id="reveal">Show the meaning</button>
+  <div id="answer" class="hide"><div class="en" id="en"></div>
+    <div class="ex" id="ex"><div class="s" id="exjp"></div><div class="k" id="exkana"></div><div class="e" id="exen"></div></div></div>
+</div>
+<div class="nav"><button id="prev">‹ Back</button><button class="next" id="next">Next ›</button></div>
+<a href="${esc(SITE)}#/words">Open Kotoba Beat</a>
+<script>
+const words = ${JSON.stringify(data.words).replace(/</g, '\\u003c')};
+const romaji = ${JSON.stringify(!!data.romaji)};
+let i = ${Number(start) || 0};
+const $ = (id) => document.getElementById(id);
+function show(n, open) {
+  i = (n + words.length) % words.length;
+  const w = words[i];
+  $('count').textContent = '今日の言葉  ' + (i + 1) + ' / ' + words.length;
+  $('jp').textContent = w.jp;
+  $('kana').textContent = w.kana && w.kana !== w.jp ? w.kana : '';
+  $('romaji').textContent = romaji && w.romaji ? w.romaji : '';
+  $('en').textContent = w.en || '';
+  $('ex').classList.toggle('hide', !w.ex);
+  $('exjp').textContent = w.ex || '';
+  $('exkana').textContent = w.exKana && w.exKana !== w.ex ? w.exKana : '';
+  $('exen').textContent = w.exEn || '';
+  $('answer').classList.toggle('hide', !open);
+  $('reveal').classList.toggle('hide', !!open);
+}
+$('reveal').onclick = () => show(i, true);
+$('next').onclick = () => show(i + 1, false);
+$('prev').onclick = () => show(i - 1, false);
+show(i, true);   // the word you tapped opens with its meaning
+</script></body></html>`;
+  const view = new WebView();
+  await view.loadHTML(html);
+  await view.present(false);
+}
+
+const data = await load();
+if (config.runsInWidget || config.runsInAccessoryWidget) {
+  Script.setWidget(build(data));
+} else if (data && data.words && data.words.length && args.queryParameters && args.queryParameters.word != null) {
+  await showCard(data, args.queryParameters.word);
+} else if (data && data.words && data.words.length) {
+  await showCard(data, Math.floor(Date.now() / (SLOT_MIN * 60000)) % data.words.length);
+} else {
+  await build(data).presentMedium();
+}
 Script.complete();
