@@ -1575,3 +1575,46 @@ body.has-tabs .lk-sheet { bottom: calc(var(--tabbar-h) + var(--sp-3) + env(safe-
 .cap-key .k-first::before { border-top-style: dashed; border-color: var(--trace, var(--ink)); }
 .cap-key .k-last::before { border-color: var(--accent); }
 .cap-item .linkbtn, .letter-line .linkbtn { align-self: flex-start; }
+
+/* Manga Reader (js/modes/manga.js): a page with its speech bubbles, and a panel for the open bubble (below the page
+   on a phone, beside it on a wide screen). */
+.mg-reader { display: flex; flex-direction: column; gap: var(--sp-4); }
+@media (min-width: 960px) {
+  .mg-reader.has-bubble { display: grid; grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
+  .mg-reader .mg-panel { position: sticky; top: calc(var(--topbar-h) + var(--sp-4)); max-height: calc(100vh - var(--topbar-h) - 2 * var(--sp-4)); overflow-y: auto; }
+}
+.mg-bar, .mg-tools { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.mg-book-title { min-width: 0; overflow-wrap: anywhere; }
+.mg-tools .btn { flex: 0 1 auto; }
+.mg-scroll { overflow: auto; border-radius: var(--r-md); border: 2px solid var(--border-strong); background: var(--surface-2); max-width: 100%; }
+.mg-stage { position: relative; width: 100%; margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.mg-scroll.zoom .mg-stage { width: 200%; }
+@media (min-width: 960px) { .mg-scroll:not(.zoom) .mg-stage { max-width: 760px; } }
+.mg-stage.boxing { touch-action: none; cursor: crosshair; }
+.mg-img, .mg-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.mg-drag { position: absolute; border: 3px dashed var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); pointer-events: none; }
+.mg-bubble { position: absolute; padding: 0; border: 2.5px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 8%, transparent); cursor: pointer; }
+.mg-bubble.on { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 22%, transparent); box-shadow: 0 0 0 3px var(--gold); }
+.mg-bubble:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* Practice pages: the bubble's own text, set top to bottom like printed manga. */
+.mg-bubble.sample { border-color: transparent; background: transparent; color: #111; display: flex; align-items: center; justify-content: center; }
+.mg-bubble.sample:hover { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.mg-vtext { writing-mode: vertical-rl; font-family: var(--font-jp); font-weight: 800; font-size: 3.3cqw; line-height: 1.5; text-align: start; }
+.mg-stage { container-type: inline-size; }
+.mg-vtext rt { font-size: 0.5em; font-weight: 600; }
+.mg-stage.no-rt rt, .mg-line.no-rt rt { display: none; }
+.mg-panel { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mg-panel-head { display: flex; align-items: center; gap: var(--sp-2); }
+.mg-text { font: max(16px, 1rem)/1.5 var(--font-jp); }
+.mg-line { font-family: var(--font-jp); font-size: var(--fs-lg); line-height: var(--lh-ruby, 2); margin: 0; }
+.mg-words-row { display: flex; flex-wrap: wrap; gap: var(--sp-1); align-items: flex-end; }
+.mg-chip { min-height: 44px; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--ink); font: 700 var(--fs-md)/1.6 var(--font-jp); cursor: pointer; }
+.mg-chip.on { background: var(--gold); color: #16131d; border-color: var(--ink); }
+.mg-chip.plain { border-color: transparent; background: transparent; cursor: default; display: inline-flex; align-items: flex-end; }
+.mg-chip rt { font-size: 0.6em; font-weight: 600; }
+.mg-card { border-top: 2px solid var(--line); padding-top: var(--sp-2); }
+.mg-senses { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 2px; }
+.mg-alts { display: flex; flex-wrap: wrap; gap: var(--sp-1); align-items: center; }
+.mg-breakdown { list-style: none; padding: 0; margin: var(--sp-1) 0 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.mg-sources { margin: 0; }
+.mg-empty { text-align: left; }

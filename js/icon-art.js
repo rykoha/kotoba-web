@@ -1,6 +1,7 @@
 // Line drawings that stand in for the emoji the app used to show (see icons.js). Original artwork: 24x24, drawn
 // with round 2px strokes in the text colour.
 export const ICON_ART = {
+  "manga": "<rect x=\"3.5\" y=\"2.5\" width=\"17\" height=\"19\" rx=\"1.5\"/><path d=\"M3.5 10h17M12 2.5V10\"/><path d=\"M8 13.5h8a2 2 0 0 1 2 2v.5a2 2 0 0 1-2 2h-4.5L9 20v-2H8a2 2 0 0 1-2-2v-.5a2 2 0 0 1 2-2Z\"/>",
   "keyboard": "<rect x=\"2.5\" y=\"6\" width=\"19\" height=\"12\" rx=\"2\"/><path d=\"M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6\"/>",
   "star": "<polygon points=\"12 3 14.6 9 21 9.4 16 13.6 17.6 20.5 12 16.8 6.4 20.5 8 13.6 3 9.4 9.4 9\"/>",
   "flag": "<path d=\"M5 21V4\"/><path d=\"M5 4h12l-2.5 4.5L17 13H5\"/>",

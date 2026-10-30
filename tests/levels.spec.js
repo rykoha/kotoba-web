@@ -15,7 +15,7 @@ const FIXTURE_V11 = JSON.parse(readFileSync(new URL('./fixtures/progress-v11.jso
 const MIN = {
   garden: 20, rhythm: 12, slice: 20, duel: 20, story: 4, arcs: 1, particle: 20, forge: 12, dojo: 5, tracks: 1, conj: 20,
   build: 20, kata: 20, shop: 6, customers: 3, keigo: { N4: 20, N3: 20 }, listen: 6, numbers: 20, course: 8, brush: 20, rival: 3, meet: 3, messages: 20,
-  library: 6, walk: 20, type: 20, dictation: 20,
+  library: 6, walk: 20, type: 20, dictation: 20, manga: 2,
 };
 
 const N4_PASS = { level: 'N5', format: 'full', pass: true, total: 130, lk: 90, li: 40, at: Date.now() - 86_400_000 };
@@ -164,7 +164,7 @@ test.describe('levels: the N4 gate', () => {
     await page.goto('./');
     await expect(page.locator('.today, .stack').first()).toBeVisible();
     const s = await saved(page);
-    expect(s.v).toBe(15);
+    expect(s.v).toBe(16);
     expect(s.items).toEqual(FIXTURE_V11.items);
     expect(s.chapters).toEqual(FIXTURE_V11.chapters);
     expect(s.messages.thread[0].id).toBe('r1');   // (opening the app may bring today's message after it)

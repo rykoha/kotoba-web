@@ -296,7 +296,7 @@ test.describe('saved progress v6 → v7', () => {
     await seed(page, FIXTURE_V6);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(15);
+    expect(s.v).toBe(16);
     expect(s.settings.pronCheck).toBe(true);
     for (const [k, v] of Object.entries(FIXTURE_V6.settings)) expect(s.settings[k]).toEqual(v);
     expect(s.items).toEqual(FIXTURE_V6.items);

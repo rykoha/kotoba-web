@@ -369,7 +369,9 @@ def source_texts():
     texts = set()
     for dirpath, _, files in os.walk(os.path.join(ROOT, 'js')):
         for f in files:
-            if not f.endswith('.js') or f in ('readings.js', 'clips.js', 'n5.js', 'n4.js', 'n3.js', 'words.js', 'lookup-data.js'):
+            # The Manga Reader's conjugation rules and practice bubbles aren't read through readings.js (the reader
+            # gives its own readings), so they're left out.
+            if not f.endswith('.js') or f in ('readings.js', 'clips.js', 'n5.js', 'n4.js', 'n3.js', 'words.js', 'lookup-data.js', 'manga-dict.js', 'manga-samples.js'):
                 continue
             src = open(os.path.join(dirpath, f), encoding='utf-8').read()
             # Lists of look-alike characters (js/word-help.js) are not text: reading 右石 as a word would give 石 the

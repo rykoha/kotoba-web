@@ -126,6 +126,7 @@ export const EMOJI_ICONS = {
   "🏆": "trophy",
   "↗": "rise",
   "↘": "fall",
+  "🗯": "manga",
 };
 
 /** A short spoken name for an icon that stands alone ("potted plant"). */

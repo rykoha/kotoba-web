@@ -231,6 +231,19 @@ test.describe('mergeProgress (pure merge in store.js)', () => {
     expect((await merge(page, pc, phone)).messages).toEqual(m.messages);
   });
 
+  test('My words from the Manga Reader: words kept on either device are kept once, with their Garden cards (v14)', async ({ page }) => {
+    const phone = { v: 13, items: { 'my:火影': item(T0 + 2 * H) }, mywords: { 火影: { r: 'ほかげ', en: 'firelight', at: T0 - 5 * H } } };
+    const pc = { v: 14, items: { 'my:火影': item(T0 - 9 * H, { r: 1 }), 'my:海賊王': item(T0 + H) },
+      mywords: { 火影: { r: 'ほかげ', en: 'firelight', at: T0 - 8 * H }, 海賊王: { r: 'かいぞくおう', en: 'pirate king', at: T0 - 2 * H } } };
+    const m = await merge(page, phone, pc);
+    expect(Object.keys(m.mywords).sort()).toEqual(['海賊王', '火影'].sort());
+    expect(m.mywords['火影'].at).toBe(T0 - 8 * H);                 // the copy kept first
+    expect(m.items['my:火影'].lr).toBe(T0 + 2 * H);                 // the newer review wins, as for any card
+    expect(m.items['my:海賊王']).toBeTruthy();
+    expect((await merge(page, pc, phone)).mywords).toEqual(m.mywords);
+    expect((await merge(page, m, pc)).mywords).toEqual(m.mywords);  // idempotent
+  });
+
   test('Kana Brush drawing cards: the newest drawing review on either device wins, reading reviews merge on their own', async ({ page }) => {
     const card = (lr, extra = {}) => ({ due: lr + 24 * H, s: 1.5, d: 5, lr, r: 2, pl: T0 - 90 * H, ...extra });
     const phone = { v: 9, items: {

@@ -14,7 +14,7 @@ A Japanese study game for PC and phone that I built for my own learning. It turn
 
 - **Today:** a guided daily session of review, story input, speaking and a skill that rotates by weekday, with a 10-minute short day and a quiet mode.
 - **Reading Dojo:** hiragana, katakana and starter kanji.
-- **Twenty game modes:** Kana Brush, Rival Battle, Encounters, Garden (spaced review of voiced JLPT N5 to N3 decks), Type It, Story, Library, Particle Train, Kanji Forge, Conjugation Dojo, Sentence Builder, Katakana Rush, Rhythm, Pitch Duel, Speak Slice, Shopkeeper, Listening Lab, Dictation Drops, Numbers & Time and Walk Mode.
+- **Twenty-one game modes:** Kana Brush, Rival Battle, Encounters, Garden (spaced review of voiced JLPT N5 to N3 decks), Type It, Story, Library, Manga Reader, Particle Train, Kanji Forge, Conjugation Dojo, Sentence Builder, Katakana Rush, Rhythm, Pitch Duel, Speak Slice, Shopkeeper, Listening Lab, Dictation Drops, Numbers & Time and Walk Mode.
 - **Road to the JLPT:** content tagged N5, N4 and N3, a readiness meter and original mock tests scored like the real one.
 - **Speaking feedback on the device:** a pronunciation check for sounds, pitch accent and rhythm, and a Pitch Coach that draws your pitch live.
 - **Gentle by design:** generous scoring, the answer shown on a miss instead of a lost life, and no streaks.
@@ -31,7 +31,8 @@ A Japanese study game for PC and phone that I built for my own learning. It turn
 ## Credits
 
 - **Voices:** VOICEVOX:四国めたん, VOICEVOX:白上虎太郎, VOICEVOX:青山龍星, VOICEVOX:玄野武宏, VOICEVOX:東北イタコ, VOICEVOX:ずんだもん, VOICEVOX:春日部つむぎ, VOICEVOX:東北ずん子, VOICEVOX:剣崎雌雄. Generated with [VOICEVOX](https://voicevox.hiroshiba.jp/) and used under each character's terms. The credits are also shown in the app's Settings.
-- **Readings and lookup:** deck readings were checked against, and tap-to-look-up meanings beyond the decks come from, [JMdict](https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project), © the [Electronic Dictionary Research and Development Group](https://www.edrdg.org/), used under the [Creative Commons Attribution-ShareAlike 4.0 licence](https://www.edrdg.org/edrdg/licence.html).
+- **Readings and lookup:** deck readings were checked against, and tap-to-look-up meanings beyond the decks and the Manga Reader dictionary come from, [JMdict](https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project), © the [Electronic Dictionary Research and Development Group](https://www.edrdg.org/), used under the [Creative Commons Attribution-ShareAlike 4.0 licence](https://www.edrdg.org/edrdg/licence.html).
+- **Manga Reader text reading:** [Tesseract](https://github.com/tesseract-ocr/tesseract) through [tesseract.js](https://github.com/naptha/tesseract.js) with its Japanese models, Apache License 2.0, served from this site (`manga/ocr/`).
 - **Kana strokes:** Kana Brush strokes from [KanjiVG](https://kanjivg.tagaini.net/), © Ulrich Apel and contributors, CC BY-SA 3.0.
 - **Furigana and romaji:** generated at build time with [Open JTalk](https://open-jtalk.sourceforge.net/) (Modified BSD licence) through [pyopenjtalk-plus](https://github.com/tsukumijima/pyopenjtalk-plus).
 - **Spaced review:** the FSRS v4 algorithm and default weights from the [open-spaced-repetition](https://github.com/open-spaced-repetition) project.
@@ -41,6 +42,16 @@ A Japanese study game for PC and phone that I built for my own learning. It turn
 
 - Progress is saved in the browser on each device. To keep devices in step, turn on Settings > Sync across devices (optional, below). Export / Import still works as a manual backup.
 - When you change any file, bump `CACHE_VERSION` in `sw.js` so installed copies update.
+
+## Manga Reader
+
+The learner adds manga pages they own or read legally (screenshots or picture files). Pages stay in that browser only (IndexedDB, `js/manga-pages.js`): never in the repo, progress, sync or an export code, because the site is public.
+
+- **Reading a bubble:** drag a box around it and Tesseract reads it on the device (`js/manga-ocr.js`, vertical or horizontal Japanese). Furigana columns are dropped by size. The text can always be fixed, pasted (iPhone Live Text is very accurate) or typed.
+- **Words:** `js/manga-dict.js` splits the text into the likeliest words from a JMdict word list, undoing conjugations first (食べなかった → 食べる, negative then past).
+- **Keeping words:** a word in the Garden's decks is planted as that voiced card. Any other word becomes one of **My words** (saved progress v14, `mywords`), a Garden card `my:<word>` asked by meaning.
+- **Practice pages:** six original scenes, two per level (`js/manga-samples.js`), with their bubbles as real text.
+- **Big files:** the dictionary (`manga/dict.txt`, about 5 MB to download) and the text reader with its models (`manga/ocr/`, about 6 MB) are fetched the first time they're needed and kept in their own service worker cache. Rebuild the dictionary with `tools/build_manga_dict.py`. `manga/ocr/worker.min.js` has one change from tesseract.js 7.0.0: Tesseract's "Parameter not found" notices are silenced, so they don't show as console errors.
 
 ## Garden review cards
 
