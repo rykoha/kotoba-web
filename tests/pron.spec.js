@@ -1,7 +1,7 @@
 // The optional pronunciation check (js/pron.js, pron-analysis.js, pron-tips.js): the analysis on synthetic data,
 // where the 🎤 button appears, and the whole flow with Chromium's fake microphone and a stand-in recognizer.
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, studiedDays } from './helpers.js';
 
 const FIXTURE_V6 = JSON.parse(readFileSync(new URL('./fixtures/progress-v6.json', import.meta.url), 'utf8'));
 
@@ -296,12 +296,12 @@ test.describe('saved progress v6 → v7', () => {
     await seed(page, FIXTURE_V6);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.settings.pronCheck).toBe(true);
     for (const [k, v] of Object.entries(FIXTURE_V6.settings)) expect(s.settings[k]).toEqual(v);
     expect(s.items).toEqual(FIXTURE_V6.items);
     expect(s.grammar).toEqual(FIXTURE_V6.grammar);
-    expect(s.days).toEqual(FIXTURE_V6.days);
+    expect(studiedDays(s.days)).toEqual(studiedDays(FIXTURE_V6.days));
     for (const k of ['chapters', 'forged', 'dojo', 'saga', 'course']) expect(s[k]).toEqual(FIXTURE_V6[k]);
     // A saved "off" stays off.
     const off = await page.evaluate(async (f) => (await import('./js/store.js')).store.parseImport(JSON.stringify({ ...f, settings: { ...f.settings, pronCheck: false } })).settings.pronCheck, FIXTURE_V6);

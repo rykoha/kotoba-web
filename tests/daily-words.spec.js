@@ -134,4 +134,43 @@ test.describe("Today's words", () => {
     await expect.poll(() => !!server.gist.files[WIDGET]).toBe(false);
     await expectNoHorizontalScroll(page);
   });
+
+  test('a story word comes with a deck example sentence, shown with its meaning', async ({ page }) => {
+    const now = Date.now();
+    await seed(page, { v: 5, items: { 'w:まける': { level: 2, due: now + 5 * H, best: 0, r: 3, pl: now - 100 * H, s: 3, d: 5, lr: now - 24 * H, help: true } } });
+    await page.goto('./#/words');
+    expect((await chipWords(page))[0]).toBe('まける');
+    await view(page).getByRole('button', { name: 'Show the meaning' }).click();
+    await expect(view(page).locator('.word-answer')).toContainText("I'll never lose again.");
+  });
+
+  test('the set picked first that day wins on every device, and the widget gets that same set', async ({ page }) => {
+    const today = new Date();
+    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // The PC picked its set this morning; the phone picks its own before its first sync.
+    const pcSet = { date: key, ids: ['n5:水', 'n5:人', 'n5:私'], at: Date.now() - 5 * H };
+    const progress = JSON.stringify({ app: 'kotoba-beat', v: 17, data: { v: 17, items: {}, daily: pcSet } });
+    const server = await mockGitHub(page, { id: 'abc123', files: { [FILE]: { content: progress } } });
+    await page.addInitScript(([k, v]) => { if (!sessionStorage.getItem('__s')) { sessionStorage.setItem('__s', '1'); localStorage.setItem(k, v); } },
+      [SYNC_KEY, JSON.stringify({ token: TOKEN, gistId: 'abc123', lastSync: 0, note: '', widget: true })]);
+    await page.goto('./#/words');
+    await expect.poll(() => chipWords(page)).toEqual(['水', '人', '私']);
+    await expect.poll(() => (server.gist.files[WIDGET] ? JSON.parse(server.gist.files[WIDGET].content).words.map((w) => w.jp) : [])).toEqual(['水', '人', '私']);
+    const feed = JSON.parse(server.gist.files[WIDGET].content);
+    expect(feed.words[0]).toEqual(expect.objectContaining({ ex: expect.any(String), exKana: expect.any(String), exEn: expect.any(String) }));
+  });
+});
+
+test.describe('mergeProgress: today\'s words', () => {
+  test('the later day wins; on the same day, the set picked first', async ({ page }) => {
+    await page.goto('./');
+    const merged = await page.evaluate(async () => {
+      const { mergeProgress } = await import('./js/store.js');
+      const a = { v: 17, items: {}, daily: { date: '2026-10-30', ids: ['n5:人'], at: 200 } };
+      const b = { v: 17, items: {}, daily: { date: '2026-10-30', ids: ['n5:水'], at: 100 } };
+      const c = { v: 17, items: {}, daily: { date: '2026-10-31', ids: ['n5:私'], at: 900 } };
+      return [mergeProgress(a, b).daily.ids, mergeProgress(b, a).daily.ids, mergeProgress(a, c).daily.ids, mergeProgress(a, { v: 16, items: {} }).daily.ids];
+    });
+    expect(merged).toEqual([['n5:水'], ['n5:水'], ['n5:私'], ['n5:人']]);
+  });
 });

@@ -589,7 +589,7 @@ route();
 // When it brings in progress from another device, redraw a tab screen; a game in progress is left alone.
 sync.onChange(() => {
   const [a, b] = parse();
-  if (!b && (a === undefined || a === 'modes' || a === 'progress') && !document.querySelector('.reward')) route();
+  if (((!b && (a === undefined || a === 'modes' || a === 'progress')) || a === 'words') && !document.querySelector('.reward')) route();
 });
 sync.init();
 initPron();   // every 🎤 "Check my pronunciation" button opens the one shared check (js/pron.js)

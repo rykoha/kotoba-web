@@ -195,7 +195,7 @@ test.describe('Manga Reader', () => {
     await expect(view(page).locator('h2')).toHaveText('漫画');
     await page.evaluate(async () => (await import('./js/store.js')).store.save());
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.mywords).toEqual({});
     expect(s.items['n5:雨'].r).toBe(3);
   });

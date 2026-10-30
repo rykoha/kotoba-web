@@ -2,7 +2,7 @@
 // (run in Node), the readiness meter on Today and Progress, "ready for a mock", marking the real test, taking a mini
 // and a timed full mock, misses going into the Garden, and the v8 → v9 migration and sync merge.
 import { readFileSync } from 'node:fs';
-import { test, expect, seed, saved, view, expectNoHorizontalScroll } from './helpers.js';
+import { test, expect, seed, saved, view, expectNoHorizontalScroll, studiedDays } from './helpers.js';
 import { buildMock, scoreMock, mockIds, nearMisses, BANK, BANKS, FORMATS, FORMATS_N3, TYPES, N5_KANJI, N3_KANJI, SCORING, MOCK_LEVELS, typeOf, scoreSections } from '../js/exam-data.js';
 import * as N3_READING from '../js/exam-bank-n3-reading.js';
 import * as N3_LISTEN from '../js/exam-bank-n3-listen.js';
@@ -250,7 +250,7 @@ test.describe('mock exam', () => {
     await expect(v.locator('.exam-miss .exam-scene')).toHaveCount(1);   // the 発話表現 picture, in review
     await expectNoHorizontalScroll(page);
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.exam.history).toHaveLength(1);
     expect(s.exam.history[0]).toMatchObject({ level: 'N5', format: 'mini', total: 0, pass: false });
     expect(s.exam.seen.length).toBeGreaterThan(10);
@@ -412,10 +412,10 @@ test.describe('saved progress v8 → v9', () => {
     await seed(page, FIXTURE_V8);
     await page.goto('./');
     const s = await saved(page);
-    expect(s.v).toBe(16);
+    expect(s.v).toBe(17);
     expect(s.exam).toEqual({ history: [], real: {}, seen: [], later: {}, goal: null });
     expect(s.settings).toEqual({ ...FIXTURE_V8.settings, autoMic: false, showAllLevels: false });
-    for (const k of ['items', 'grammar', 'days', 'chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'coach']) expect(s[k], k).toEqual(FIXTURE_V8[k]);
+    for (const k of ['items', 'grammar', 'days', 'chapters', 'forged', 'dojo', 'saga', 'course', 'engine', 'coach']) expect(k === 'days' ? studiedDays(s[k]) : s[k], k).toEqual(k === 'days' ? studiedDays(FIXTURE_V8[k]) : FIXTURE_V8[k]);
   });
 
   test('sync keeps mock results from both devices once each, the latest real-test mark, and the later "Later"', async ({ page }) => {

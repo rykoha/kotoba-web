@@ -66,6 +66,10 @@ export async function plainText(locator) {
 /** The app's main view, where each screen renders. */
 export const view = (page) => page.locator('#view');
 
+/** Saved days without untouched ones (opening the app can save today's empty day, e.g. with today's words). */
+export const studiedDays = (days) => Object.fromEntries(Object.entries(days || {})
+  .filter(([, d]) => d.tot || d.rev || d.newc || d.studied || Object.keys(d.blocks || {}).length));
+
 
 /** A first read of a story scene starts with its new words; skip them to reach the story lines. */
 export async function pastWords(v) {
